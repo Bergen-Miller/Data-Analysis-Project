@@ -1,10 +1,10 @@
 ### Topic
 
-Interplay between cross-county migration, household incomes, county gdp, and income taxes
+We examine relationships between cross-county migration, household incomes, county gdp, and effective income taxes in the U.S. from 2011 to 2022.
 
 ### Motivation
 
-In Bergen's 432, he's examining the effect of a change in county effective household income tax rates on GDP. In 560, we examine the place of cross-county migration in county gdp, realized tax changes, and household income.
+
 
 ### Research Questions
 
