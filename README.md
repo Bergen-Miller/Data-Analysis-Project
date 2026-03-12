@@ -2,7 +2,13 @@
 We examine the relationships among cross-county migration, household income, county GDP, and effective income taxes in the United States from 2011 to 2022.
 
 ### Motivation
-This project studies whether tax changes affect where people live and how those migration responses may shape local economic outcomes. In particular, we are interested in whether higher-income households are more mobile, whether tax shocks influence migration decisions, and whether migration affects county GDP through changes in population, income composition, or the local tax base.
+This project asks whether tax changes affect where people choose to live and potentially, how those migration responses may shape local economic outcomes. A tax change can alter behavior within a county, such as labor supply, investment, and consumption, but it may also change who lives there. If households respond by moving across counties, then tax policy may reallocate economic activity across space rather than simply increase or decrease it overall.
+
+Understanding this distinction is important for both economics and public policy. Policy makers care not only about total population, but also about the composition of that population. If higher-income households are more mobile than others, tax shocks may change the local tax base, the distribution of income, consumer demand, and the productivity mix of residents. A county that loses high-income households may see lower GDP not just because fewer people live there, but because the people who leave account for a disproportionate share of earnings, spending, and tax revenue.
+
+This project is also motivated by the broader question of whether observed county GDP effects reflect true production changes or sorting effects. For example, a county’s GDP could fall because remaining residents work or invest less, or because high-income households relocate elsewhere because of taxes. Distinguishing between these mechanisms helps clarify what tax policy is actually doing and whether county-level economic and policy changes reflect a change in individual behavior, migration, or both.
+
+More broadly, this analysis helps connect household mobility to regional economic performance. By combining county income, tax, migration, and GDP data, we can study whether mobility differs systematically by income group, whether tax shocks affect migration decisions differently across groups, and whether those migration patterns have measurable consequences for local output. These questions are relevant for understanding the geographic incidence of taxation and why similar tax changes may have different effects across places.
 
 ### Research Questions
 1. (Descriptive) Is there a relationship between household AGI and cross-county mobility?
