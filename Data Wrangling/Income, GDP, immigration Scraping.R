@@ -223,7 +223,7 @@ merged = merged |> mutate(state=state.x, county=county.x)
 merged = merged |> select(-c(state.x, county.x))
 merged = merged |> relocate(fips, state, county, year, sup)
 
-save(merged, file='mergedIncomesGdp.RData')
+save(merged, file='temp_mergedIncomesGdp.RData')
 
 
 
@@ -281,7 +281,7 @@ for(i in 1:11){
 
 # Save data
 
-save(inflows, outflows, file='countyImmigrationData.RData')
+save(inflows, outflows, file='temp_countyImmigrationData.RData')
 
 
 
