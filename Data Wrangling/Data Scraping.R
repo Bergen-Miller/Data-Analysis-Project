@@ -3,6 +3,7 @@ library(rvest)
 library(httr)
 library(jsonlite)
 
+#
 # ---- Scrape Incomes ----
 
 url='https://www.irs.gov/statistics/soi-tax-stats-county-data'
@@ -184,17 +185,6 @@ urls = c('https://www.irs.gov/statistics/soi-tax-stats-migration-data-2011-2012'
          'https://www.irs.gov/statistics/soi-tax-stats-migration-data-2020-2021',
          'https://www.irs.gov/statistics/soi-tax-stats-migration-data-2021-2022')
 
-outflowSelectors=c('body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(8) > a:nth-child(5)',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(10) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(8) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > ul:nth-child(9) > li:nth-child(3) > a',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(8) > a:nth-child(3)',
-                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(7) > a:nth-child(3)')
 
 
 inflowSelectors=c('body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(8) > a:nth-child(6)',
@@ -209,11 +199,6 @@ inflowSelectors=c('body > div.dialog-off-canvas-main-canvas > div.pup-main-conta
                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(8) > a:nth-child(4)',
                   'body > div.dialog-off-canvas-main-canvas > div.pup-main-container.container > div > div.pup-header-content-rt.col-sm-12.col-md-9 > div > article > div > div > p:nth-child(7) > a:nth-child(4)')
 
-outflows = list()
-for(i in 1:11){
-  outflows[[i]] = loadFromPage(urls[i], outflowSelectors[i])
-  Sys.sleep(.5)
-}
 
 inflows = list()
 for(i in 1:11){
@@ -223,7 +208,7 @@ for(i in 1:11){
 
 # Save data
 
-save(inflows, outflows, file='temp_countyImmigrationData.RData')
+save(inflows, file='Temp Data/temp_countyImmigrationData.RData')
 
 
 

@@ -41,10 +41,9 @@ newDf = newDf |> mutate(totPop=`FALSE` + `TRUE`,
 #
 # ---- Merge migration data from list into single df ----
 
-# inflows[[1]] and outflows[[1]] represent changes from 2011 to 2012.
+# inflows[[1]] represent changes from 2011 to 2012.
 
-# Model for data is that observations are identified by county from, county to, and year.
-#   There is to be a row for each pair of counties (3100+1)*3100/2 for each year (*11)
+# Data is to be identified by pairs of counties and year.
 
 # Need columns for each of the To and From counties:
 #   fips, county, flow (population), salaries, investment income, st & loc inc tax,
@@ -122,5 +121,12 @@ save(migration, file='Temp Data/temp_mergedImmigrationData.RData')
 
 #
 # ---- Continue Cleaning migration data (address aggregates) ----
+skim(migration)
+# No NA values, some data is suppressed (set to -1 for privacy)
+
+# Separate tibble into aggregates and non-aggregates
+
+
+
 
 
