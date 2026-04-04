@@ -9,35 +9,18 @@ load('Temp Data/temp_countyImmigrationData.RData')
 
 wideIncomes = countyIncomePanel |>
   mutate(rich=ifelse((agi_stub==7 & year==2011) | (agi_stub==8 & year>2011), 1, 0)) |>
-  group_by(fips, year, rich) |> summarize(across(numReturns:incTax, sum, na.rm=T),
-                                          across(c(state, county, sup), first)) |>
+  group_by(fips, year, rich) |>
+  summarize(across(numReturns:incTax, sum, na.rm=T),
+            across(c(state, county, sup), first), .groups='drop') |>
   pivot_wider(names_from='rich', values_from=c('numReturns':'incTax'))
-# _0 is for agi under $200k
+# _0 is for agi under $200k, _1 is for households with agi above $200k
 
 # Redefine the sup column to indicate only counties with the top income group suppressed
 wideIncomes1 = wideIncomes |> mutate(sup=ifelse(numReturns_1==0, T, F))
 
-# Exploring Data
-freq(wideIncomes1$sup) # 4.8% of observations suppressed.
-
-# What cut-off to use for 'rich' households
-
-df = countyIncomePanel |> mutate(maybeRich = agi_stub>=7 & year==2011 | agi_stub >=8 & year>2011) |>
-  group_by(year, maybeRich) |> summarize(pop = sum(numReturns))
-
-newDf = df |> pivot_wider(
-  names_from = 'maybeRich',
-  values_from= 'pop'
-)
-newDf = newDf |> mutate(totPop=`FALSE` + `TRUE`,
-                        fracHi = `TRUE`/(`TRUE` + `FALSE`))
-
-# Even in 2022, only 24% of households report AGI greater than $100k.
-# In 2022, only 8% report AGI greater than $200k.
-
-# For this project, it might be better not to drop these observations.
-
-
+#
+# ---- Save wide Incomes ----
+save(wideIncomes1, file='Temp Data/temp_wideIncomePanel.RData')
 #
 # ---- Merge migration data from list into single df ----
 
@@ -117,16 +100,29 @@ migration = newInflows |> select(-lowerKey)
 #   tax returns' cumulative AGI (agi) in year t+1, which reported residence in county y1_fips in 
 #   the year specified and residence in county y2_fips in year t+1
 
-save(migration, file='Temp Data/temp_mergedImmigrationData.RData')
-
-#
-# ---- Continue Cleaning migration data (address aggregates) ----
-skim(migration)
-# No NA values, some data is suppressed (set to -1 for privacy)
-
 # Separate tibble into aggregates and non-aggregates
+aggMig = migration |> filter(y2_fips >=57000)
+countyMig = migration |> filter(y2_fips < 57000) |> mutate(year=as.numeric(year))
 
+# Only need some columns from income data:
+selectCols = wideIncomes1 |> mutate(
+  lowTaxRate = (incTax_0+taxesPaid_0)/agi_0,
+  highTaxRate = (incTax_1 + taxesPaid_1)/agi_1
+) |> select(
+  fips, year, lowTaxRate, highTaxRate
+)
 
+countyWithTaxes = countyMig |> left_join(
+  selectCols |> rename(y1_lowTaxRate=lowTaxRate, y1_highTaxRate=highTaxRate),
+  by = c('y1_fips'='fips', 'year'='year') # add column for first-year county tax rate
+) |> left_join(
+  selectCols |> rename(y2_lowTaxRate=lowTaxRate, y2_highTaxRate=highTaxRate),
+  by= c('y2_fips'='fips', 'year'='year') # add column for second-year county tax rate
+) |> mutate( # add columns for tax differentials
+  lowTaxDiff = y2_lowTaxRate-y1_lowTaxRate,
+  highTaxDiff = y2_highTaxRate-y1_highTaxRate # If second-year county has higher tax rate, these columns are positive 
+)
 
+save(aggMig, countyMig, countyWithTaxes, file='Temp Data/temp_mergedImmigrationData.RData')
 
 
