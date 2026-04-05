@@ -101,28 +101,79 @@ migration = newInflows |> select(-lowerKey)
 #   the year specified and residence in county y2_fips in year t+1
 
 # Separate tibble into aggregates and non-aggregates
-aggMig = migration |> filter(y2_fips >=57000)
+aggMig = migration |> filter(y2_fips >=57000) |> mutate(year=as.numeric(year))
 countyMig = migration |> filter(y2_fips < 57000) |> mutate(year=as.numeric(year))
 
 # Only need some columns from income data:
 selectCols = wideIncomes1 |> mutate(
   lowTaxRate = (incTax_0+taxesPaid_0)/agi_0,
-  highTaxRate = (incTax_1 + taxesPaid_1)/agi_1
+  highTaxRate = (incTax_1 + taxesPaid_1)/agi_1,
+  lowEmploymentRate = numSalaries_0 / numReturns_0,
+  highEmploymentRate = numSalaries_1/ numReturns_1,
+  lowEarned = totSalaries_0,
+  highEarned = totSalaries_1,
+  lowCapital = interest_0+ordDividends_0+qualDividends_0+busAndProf_0+capGains_0,
+  highCapital = interest_1+ordDividends_1+qualDividends_1+busAndProf_1+capGains_1
 ) |> select(
-  fips, year, lowTaxRate, highTaxRate
+  fips, year, lowTaxRate:highCapital
 )
 
-countyWithTaxes = countyMig |> left_join(
-  selectCols |> rename(y1_lowTaxRate=lowTaxRate, y1_highTaxRate=highTaxRate),
-  by = c('y1_fips'='fips', 'year'='year') # add column for first-year county tax rate
-) |> left_join(
-  selectCols |> rename(y2_lowTaxRate=lowTaxRate, y2_highTaxRate=highTaxRate),
-  by= c('y2_fips'='fips', 'year'='year') # add column for second-year county tax rate
+# tibble selectCols has data on low and high-income households' :
+#   tax rates, employment rates, salaries and wages, and investment income
+
+newCountyData = countyMig |> left_join( # add all columns from selectCols for first-year county
+  selectCols |> rename(y1_lowTaxRate=lowTaxRate, y1_highTaxRate=highTaxRate,
+                       y1_lowER = lowEmploymentRate, y1_highER=highEmploymentRate,
+                       y1_lowEarned = lowEarned, y1_highEarned = highEarned,
+                       y1_lowCapital = lowCapital, y1_highCapital=highCapital),
+  by = c('y1_fips'='fips', 'year'='year')
+) |> left_join( # add all columns from selectCols for second-year county
+  selectCols |> rename(y2_lowTaxRate=lowTaxRate, y2_highTaxRate=highTaxRate,
+                       y2_lowER = lowEmploymentRate, y2_highER=highEmploymentRate,
+                       y2_lowEarned = lowEarned, y2_highEarned = highEarned,
+                       y2_lowCapital = lowCapital, y2_highCapital=highCapital),
+  by= c('y2_fips'='fips', 'year'='year')
 ) |> mutate( # add columns for tax differentials
   lowTaxDiff = y2_lowTaxRate-y1_lowTaxRate,
   highTaxDiff = y2_highTaxRate-y1_highTaxRate # If second-year county has higher tax rate, these columns are positive 
 )
 
-save(aggMig, countyMig, countyWithTaxes, file='Temp Data/temp_mergedImmigrationData.RData')
+save(aggMig, countyMig, newCountyData, file='Temp Data/temp_mergedImmigrationData.RData')
 
+# Note that the y2 tax rate columns represent that county's effective tax rates in the first year
+
+# ---- More cleaning ----
+
+# Some observations have fewer than 10 people, so the IRS gives the values n1, n2, and agi
+#   as -1 to protect their privacy. Since our analysis does not concern the extensive margin,
+#   (whether or not a county pair has any migration), and we only consider the increases or
+#   and decreases in migration (intensive margin) and the incomes of these individuals, we will
+#   exclude these observation from our data.
+
+newCountyData2 = newCountyData |> filter(n1 != -1)
+
+# Counties in the income data with too few households over $200k have that data suppressed.
+#   Those counties, having low populations and being only 5% of observations, are okay to drop from the analysis.
+#   They also pose problems, having tax rates in the newCountyData data frame of Inf.
+
+newCountyData3 = newCountyData2 |> filter(lowTaxDiff < Inf & highTaxDiff < Inf &
+                                              y1_lowTaxRate!=Inf & y1_highTaxRate != Inf)
+
+# Only 0.8% of observations had Infinity values
+
+#   The data frame contains non-migrants, people who stay in the same county
+
+df = newCountyData3 |> filter(y1_fips!=y2_fips)
+dfNonMig = newCountyData3 |> filter(y1_fips==y2_fips)
+
+# Many counties only appear in the data set once, but that shouldn't be a problem.
+
+# The data should satisfy everything in the data-cleaning checklist.
+
+save(df, dfNonMig, file='Updated Working Files/Clean Data/cleanMigrationData.RData')
+
+# tibble df has all the data about counties involved in inter-county migration, and
+# tibble dfNonMig has all the data about counties involved in intra-county migration.
+
+# I expect tibble dfNonMig to be of little use.
 
