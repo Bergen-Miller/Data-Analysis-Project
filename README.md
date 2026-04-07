@@ -88,7 +88,7 @@ All scripts in `Updated Working Files/Analysis/` read from `Updated Working File
 
 ---
 
-## Year Convention in the Migration Data
+## Years in the Migration Data
 
 Each `year` value in the dataset is the starting year of the IRS migration file, not the year people physically moved:
 
