@@ -1,0 +1,444 @@
+---
+title: "Tax Shocks and County-Level Migration: Are the Wealthy More Mobile"
+author: "Ben Hobbs & Bergen Miller"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+    fig_caption: true
+    fig_width: 6.5
+    fig_height: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center"
+)
+
+# ---- Auto-install any missing packages ----------------------------------------
+required_pkgs = c("tidyverse", "binsreg", "fixest", "tigris", "sf",
+                   "scales", "here", "knitr", "rmarkdown")
+new_pkgs = required_pkgs[!sapply(required_pkgs, requireNamespace, quietly = TRUE)]
+if (length(new_pkgs) > 0) install.packages(new_pkgs)
+# -------------------------------------------------------------------------------
+
+library(tidyverse)
+library(binsreg)
+library(fixest)
+library(tigris)
+library(sf)
+library(scales)
+library(here)
+
+# here() finds the project root via the .Rproj or .git file, so paths work
+# correctly on any machine regardless of where RStudio's working directory is set.
+options(tigris_use_cache = TRUE) # census shapefiles download once, then cache
+
+load(here("Updated Working Files", "Clean Data", "cleanMigrationData.RData"))
+
+# Pre-compute county shapefile once for all map chunks.
+# Requires internet on first run; subsequent runs use the local tigris cache.
+counties_sf = counties(cb = TRUE, resolution = "20m", year = 2020) |>
+  filter(!STATEFP %in% c("02", "15", "72")) |>
+  mutate(fips = as.numeric(paste0(STATEFP, COUNTYFP))) |>
+  select(fips, geometry) |>
+  st_transform(5070)
+```
+
+\newpage
+
+# Introduction
+
+We examine whether state-level tax shocks cause high-income households to relocate
+to lower-tax jurisdictions. 
+
+Our primary data source is the IRS Statistics of Income (SOI) program, which publishes
+county-level income and migration files annually. The income files report adjusted gross
+income (AGI) and tax paid by county, income bracket, and year. The migration files record
+the number of returns, number of individuals, and cumulative AGI for every county-to-county
+move in each year. Our sample spans **2011–2022**.
+
+The unit of observation in our analysis is a **county-pair $\times$ year**. So for each origin
+county, we observe how many people moved to each destination county in a given year, along
+with the income and tax characteristics of both counties.
+
+To identify causal effects we will explore three state-level policy shocks with known effective
+dates:
+
+1. **New Jersey (2018):** top marginal rate raised from 8.97% to 10.75% on income above \$5M;
+   threshold later lowered to \$1M in 2021.
+2. **New York State (2021):** top marginal rate raised from 6.85% to 9.85% on income above \$1M.
+3. **Delaware (2018):** estate tax repealed (previously 16% on inheritances above \$5.49M).
+
+Our effective tax rate variable is computed as $(Federal\ income\ tax + State\ \&\ local\ taxes\ paid) / AGI$,
+computed separately for high-income (AGI > \$200k) and low-income (AGI $\leq$ \$200k) households in each county-year.
+
+\newpage
+
+# Data Construction
+
+<!-- ============================================================ -->
+<!-- Bergen: Please fill in this section.                         -->
+<!-- ============================================================ -->
+
+*[Data construction to be added.]*
+
+\newpage
+
+# Descriptive Analysis
+
+The figures below explore the unconditional relationships in our data before turning
+to causal identification. We ask two preliminary questions:
+
+1. Across all county-pairs, do wealthier migrants tend to move toward lower-tax destinations?
+2. Does this pattern differ depending on whether we measure the tax rate faced by
+  high-income or low-income households?
+
+## Migrants' Wealth vs. High-Income Tax Differential
+
+```{r fig1-compute, include=FALSE}
+p1 = binsreg(df$agi / df$n1, df$highTaxDiff, line = c(3, 3))
+```
+
+```{r fig1, fig.cap="Binscatter of migrants' per-capita AGI against the difference in effective high-income tax rates between destination and origin county. Tax differential > 0 means the destination county imposes a higher effective tax burden on high-income households. Each dot represents an equal-sized bin of county-pair observations; the line is a polynomial fit through the bin means."}
+p1$bins_plot +
+  coord_cartesian(xlim = c(-0.10, 0.10)) +
+  labs(
+    title = "Migrants' Income vs. High-Income Tax Premium at Destination",
+    subtitle = "All U.S. county-pairs, 2011-2022",
+    x = "High-Income Tax Rate Differential (Destination to Origin)",
+    y = "Migrants' Per-Capita AGI ($000s)"
+  )
+```
+
+The downward slope indicates that wealthier migrants tend to move toward counties with
+lower effective tax rates on high-income households. County-pairs where the destination
+has a higher tax burden than the origin attract migrants with below-average incomes,
+while county-pairs where the destination is less taxed attract higher-income movers.
+This is consistent with the basic prediction of the fiscal sorting model.
+
+\newpage
+
+## Migrants' Wealth vs. Low-Income Tax Differential
+
+```{r fig2-compute, include=FALSE}
+p2 = binsreg(df$agi / df$n1, df$lowTaxDiff, line = c(3, 3))
+```
+
+```{r fig2, fig.cap="Same as Figure 1 but using the effective tax rate for low-income households (AGI $\\leq$ \\$200k). Comparing the slope here to Figure 1 reveals whether high-income movers are more tax-sensitive than low-income movers."}
+p2$bins_plot +
+  coord_cartesian(xlim = c(-0.10, 0.10)) +
+  labs(
+    title = "Migrants' Income vs. Low-Income Tax Premium at Destination",
+    subtitle = "All U.S. county-pairs, 2011-2022",
+    x = "Low-Income Tax Rate Differential (Destination to Origin)",
+    y = "Migrants' Per-Capita AGI ($000s)"
+  )
+```
+
+The pattern here is similar to Figure 1, but the slope is shallower. Migrants' income is
+still negatively correlated with moving to a higher-tax destination, but the relationship
+is weaker when tax burden is measured using the low-income bracket. This suggests that
+high earners are more responsive to the tax environment at the destination than low earners
+are.
+
+\newpage
+
+# Manhattan Case Study
+
+To reduce cross-sectional noise we will look **Manhattan (New York County, FIPS 36061)**,
+one of the highest-tax, highest-income counties in the country. We ask: among the people
+leaving Manhattan in any given year, does the destination county's effective high-income
+tax rate predict how wealthy those migrants are?
+
+A negative slope would suggest wealthy Manhattanites preferentially exit to lower-tax
+destinations. A positive slope, which is what we observe, suggests something more
+nuanced: the wealthiest Manhattan leavers tend to relocate to other expensive, high-tax
+metros (San Francisco, Boston, Seattle), rather than moving purely to minimize taxes.
+
+```{r manhattan-data, include=FALSE}
+manExodus = df |> filter(y1_fips == 36061)
+positiveManExodus = manExodus |> filter(agi > 0)
+```
+
+## Binscatter: Manhattan Emigrants
+
+```{r fig3-compute, include=FALSE}
+p3 = binsreg(manExodus$agi / manExodus$n1, manExodus$highTaxDiff, line = c(3, 3))
+```
+
+```{r fig3, fig.cap="Binscatter of per-capita AGI vs. destination high-income tax differential for all people leaving Manhattan. Each bin aggregates county-pair observations with similar tax differentials."}
+p3$bins_plot +
+  coord_cartesian(xlim = c(-0.15, 0.05)) +
+  labs(
+    title = "Manhattan Emigrants: Wealth vs. Destination Tax Rate",
+    subtitle = "People leaving Manhattan (FIPS 36061), all years",
+    x = "High-Income Tax Rate Differential (Destination to Origin)",
+    y = "Migrants' Per-Capita AGI ($000s)"
+  )
+```
+
+The curve peaks in the middle of the tax differential range and falls on both ends. The
+upward portion on the left, where the destination is cheaper than Manhattan, actually
+captures the wealthiest leavers heading to places like Florida or Texas, states with lots of 
+indemnities despite their low taxes. The fall on the right, where the destination is
+even more expensive than Manhattan, reflects fewer wealthy people choosing to move
+somewhere with a higher tax burden. Overall, the relationship is non-linear, which
+supports our decision to move to a log scale in the next figure.
+
+\newpage
+
+## Scatter with Smoother: Manhattan Emigrants (Log Scale)
+
+```{r fig4, fig.cap="Smoothed scatter of log per-capita AGI against destination high-income tax differential for Manhattan emigrants with positive AGI. Logging compresses the right skew in income. The red dashed line marks destinations with the same effective tax rate as Manhattan. The upward slope indicates wealthier Manhattan leavers are heading to \\textit{higher}-tax destinations, consistent with relocation to other high-income metros rather than tax-driven flight."}
+
+ggplot(positiveManExodus, aes(x = highTaxDiff, y = log(agi / n1))) +
+  geom_point(alpha = 0.35, size = 1.2, color = "gray40") +
+  geom_smooth(method = "loess", color = "blue", se = TRUE) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red", linewidth = 0.6) +
+  labs(
+    title = "Manhattan Emigrants: Log Income vs. Destination Tax Rate",
+    subtitle = "Positive-AGI observations only; all years",
+    x = "High-Income Tax Rate Differential (Destination to Origin)",
+    y = "Log Migrants' Per-Capita AGI"
+  )
+```
+
+There is a gradual positive slope, indicating wealthier Manhattan leavers
+are not fleeing to the lowest-tax destinations, they are moving to places with
+comparable or even higher effective tax rates. This is consistent with sorting on
+amenities (such as job markets, schools, cost of living) rather than taxes alone. The red dashed
+line at zero marks destinations with the same effective rate as Manhattan; the bulk of
+high-income departures land to the right of that line.
+
+\newpage
+
+# Causal Analysis: New York's 2021 Tax Increase
+
+In 2021, New York State raised its top marginal income tax rate from **6.85% to 9.85%**
+on income exceeding \$1M. Our strategy capitalizes on the fact that some destination counties 
+outside New York were already attracting wealthy New York migrants before the shock, while 
+others were not. If the 2021 tax increase caused a behavioral response among high earners, 
+the counties that were drawing wealthier New Yorkers in the pre-shock period should see a 
+larger increase in inflows after the rate rose.
+
+The figure below plots the **proportional change** in migration flow (average of
+2021-2022 moves vs. the 2020 pre-shock baseline) against the **log per-capita AGI**
+of people who moved from each NY county to each destination in the pre-shock year.
+A positive slope would support the hypothesis that high-income New Yorkers
+where leaving at an increased rate after the tax increase.
+
+> **Note on year labels:** Each `year` value in the data is the *starting* year of the
+> IRS migration file, so `year == 2019` captures people who physically moved during
+> 2020, `year == 2020` captures moves during 2021 (the immediate shock year), and
+> `year == 2021` captures moves during 2022. The pre-shock baseline uses `year == 2019`
+> (moves in 2020); the post-shock period averages `year %in% c(2020, 2021)` (moves
+> in 2021 and 2022).
+
+```{r ny-data, include=FALSE}
+nyExodus = df |> filter(floor(y1_fips / 1000) == 36 & floor(y2_fips / 1000) != 36)
+
+# Pre-shock: per-capita AGI and flow count from year 2019 (moves in 2020)
+baseline = nyExodus |>
+  filter(year == 2019) |>
+  mutate(pcAgiPre = agi / n1, n1_pre = n1) |>
+  select(y1_fips, y2_fips, pcAgiPre, n1_pre)
+
+# Post-shock: average annual flow across years 2020 and 2021 (moves in 2021 and 2022)
+postFlows = nyExodus |>
+  filter(year %in% c(2020, 2021)) |>
+  group_by(y1_fips, y2_fips) |>
+  summarize(n1_post = mean(n1, na.rm = TRUE), .groups = "drop")
+
+finalNyExodus = baseline |>
+  inner_join(postFlows, by = c("y1_fips", "y2_fips")) |>
+  filter(pcAgiPre > 0 & n1_pre > 0)
+```
+
+```{r fig5-compute, include=FALSE}
+p5 = binsreg(
+  finalNyExodus$n1_post / finalNyExodus$n1_pre - 1,
+  log(finalNyExodus$pcAgiPre),
+  line = c(3, 3)
+)
+```
+
+```{r fig5, fig.cap="Binscatter of the proportional change in NY out-migration flows (average of 2021-2022 moves vs. the 2020 pre-shock) against the log per-capita AGI of migrants in the pre-shock year. The red dashed line at zero indicates no change. Destinations on the right attracted wealthier New Yorkers before the shock; a positive slope would imply those destinations attracted proportionally more New Yorkers after the 2021 tax increase."}
+p5$bins_plot +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red", linewidth = 0.6) +
+  labs(
+    title = "NY Tax Shock: Change in Out-Migration by Destination Wealth",
+    subtitle = "NY-origin county-pairs; avg. post-shock flows (2021-2022) vs. pre-shock baseline (2020)",
+    x = "Log Per-Capita AGI of Destination (pre-shock baseline)",
+    y = "Proportional Change in Migration Flow"
+  )
+```
+
+The slope is relatively flat and noisy, with no strong positive trend across the range
+of destination wealth. Destinations that were already drawing wealthier New Yorkers
+before the shock did not see proportionally larger inflow increases afterward. This
+suggests that the 2021 tax increase alone did not sharply redirect migration toward
+the wealthiest destinations, the behavioral response, if any, was diffused rather than
+concentrated among the highest-income movers.
+
+\newpage
+
+# Geographic Patterns: The NY 2021 Tax Shock on a Map
+
+The binscatter in Section 4 shows the *aggregate* relationship between NY out-migration
+and destination wealth. The maps below show the *geographic* version of the same question:
+which parts of the country absorbed New York migrants, and how did that pattern shift in
+the year taxes went up?
+
+## Where Did NY Migrants Go? (Before vs. After 2021)
+
+```{r map-data, include=FALSE}
+# Pre-shock: average annual inflows from any NY county, years <= 2019
+# (moves through 2020, before the NY rate increase took effect)
+nyFlowsPre = df |>
+  filter(floor(y1_fips / 1000) == 36,
+         floor(y2_fips / 1000) != 36,
+         year <= 2019) |>
+  group_by(y2_fips, year) |>
+  summarize(n1 = sum(n1, na.rm = TRUE), .groups = "drop") |>
+  group_by(y2_fips) |>
+  summarize(n1_pre = mean(n1), .groups = "drop")
+
+# Post-shock: average annual inflows across years 2020 and 2021
+# (moves during 2021 and 2022)
+nyFlowsPost = df |>
+  filter(floor(y1_fips / 1000) == 36,
+         floor(y2_fips / 1000) != 36,
+         year %in% c(2020, 2021)) |>
+  group_by(y2_fips, year) |>
+  summarize(n1 = sum(n1, na.rm = TRUE), .groups = "drop") |>
+  group_by(y2_fips) |>
+  summarize(n1_post = mean(n1), .groups = "drop")
+
+# Percent change; exclude very small values
+nyChange = nyFlowsPre |>
+  inner_join(nyFlowsPost, by = "y2_fips") |>
+  filter(n1_pre >= 5) |>
+  mutate(pct_change_capped = pmax(pmin((n1_post / n1_pre - 1) * 100, 100), -100))
+
+staticMapData = counties_sf |>
+  left_join(nyChange, by = c("fips" = "y2_fips"))
+```
+
+```{r fig-map-static, fig.width=7, fig.height=4.5, fig.cap="Percent change in average annual IRS returns arriving from New York State counties: post-shock average (moves in 2021 and 2022) vs. pre-shock average (moves through 2020). Blue counties attracted more NY migrants after the 2021 rate increase; red counties attracted fewer. Counties with fewer than 5 average annual NY arrivals in the pre-shock period are excluded. Color scale capped at $\\pm$100\\% for legibility."}
+
+ggplot(staticMapData) +
+  geom_sf(data = counties_sf, fill = "gray88", color = "white",
+          linewidth = 0.15) +
+  geom_sf(aes(fill = pct_change_capped), color = "white", linewidth = 0.15) +
+  scale_fill_gradient2(
+    low = "#FF0000",
+    mid = "#f5f5f5",
+    high = "#0339f8",
+    midpoint = 0,
+    name = "Change in NY\nIn-Migration",
+    labels = function(x) paste0(ifelse(x > 0, "+", ""), x, "%"),
+    na.value = "gray88",
+    limits = c(-100, 100)
+  ) +
+  labs(
+    title = "Where Did NY Migration Shift After the 2021 Tax Increase?",
+    subtitle = "Percent change in arrivals from NY State: avg. 2021–2022 vs. avg. through 2020"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    plot.background = element_rect(fill = "white", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = 9),
+    legend.position = "bottom",
+    legend.key.width = unit(2.2, "cm"),
+    legend.key.height = unit(0.35, "cm")
+  )
+```
+
+The map complements the binscatter results. Blue counties absorbed more New York
+migrants after the 2021 rate increase; red counties absorbed fewer. The gains are
+concentrated in Florida (particularly Miami-Dade and Palm Beach counties), parts of
+the Carolina and Texas metros, and a handful of coastal destinations. Most of the
+country shows little change (white), meaning the shock did not produce a broad
+nationwide redistribution of New York migrants. The pattern is geographically
+clustered rather than uniformly driven by low taxes, again pointing toward amenity
+sorting as a competing explanation alongside tax avoidance.
+
+> **Note:** An animated version of this map showing Manhattan out-migration
+> year-by-year from 2011–2021 is available in
+> `Updated Working Files/Analysis/Map Visualization.R`. Run that script to
+> produce `manhattan_exodus_animated.gif`. The animation makes the 2021 shift
+> visually apparent against the prior trend.
+
+\newpage
+
+# Regression Analysis
+
+<!-- ============================================================ -->
+<!-- Bergen: Add regression tables and interpretation here.       -->
+<!-- See Analysis/Regression 1 - DD with only migration and       -->
+<!-- policy change.R for the current DiD specification.           -->
+<!-- ============================================================ -->
+
+*[Regression results and interpretation to be added.]*
+
+\newpage
+
+# Conclusion
+
+<!-- ============================================================ -->
+<!-- ANY CAN DO: Fill in conclusion once results are complete.    -->
+<!-- ============================================================ -->
+
+*[Conclusion to be written once analysis is finalized.]*
+
+\newpage
+
+# Reproducibility
+
+This document was produced using **R** and **RMarkdown**. To reproduce it on any machine:
+
+1. **Clone the repository** from GitHub.
+2. **Open the project** by double-clicking `Data-Analysis-Project.Rproj` in RStudio.
+   This sets the working directory to the project root automatically — do not open
+   the `.Rmd` file directly from File Explorer/Finder, as paths will break.
+3. **Knit the document**: open `Project Write-Ups/Stage_Two.Rmd` and click *Knit*, or run:
+   ```r
+   rmarkdown::render("Project Write-Ups/Stage_Two.Rmd")
+   ```
+4. **Packages are installed automatically** the first time you knit. No manual
+   `install.packages()` calls are needed.
+5. **The cleaned data file** (`Updated Working Files/Clean Data/cleanMigrationData.RData`)
+   is committed to the repository. As long as this file is present, no scraping or
+   data-cleaning scripts need to be re-run.
+
+> **Note on the map section (Section 5):** The geographic figure downloads U.S. county
+> shapefiles from the U.S. Census Bureau via the `tigris` package. This requires an
+> internet connection on the first knit only; all subsequent knits use a local cache.
+
+**If `cleanMigrationData.RData` has been deleted**, run the scripts in this order
+before knitting:
+
+```r
+# Step 1 — only needed if Temp Data/ files were also deleted (requires internet)
+source("Data Wrangling/Data Scraping.R")
+
+# Step 2 — regenerates cleanMigrationData.RData from Temp Data/ files
+source("Data Wrangling/Cleaning and Merging.R")
+```
+
+**Session info at time of submission:**
+
+```{r session-info, echo=TRUE}
+sessionInfo()
+```
