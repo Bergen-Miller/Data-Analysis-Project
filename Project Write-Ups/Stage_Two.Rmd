@@ -426,15 +426,6 @@ The increase in mean AGI of people leaving NY from the 2011-2020 average to the 
 
 \newpage
 
-# Conclusion
-
-<!-- ============================================================ -->
-<!-- ANY CAN DO: Fill in conclusion once results are complete.    -->
-<!-- ============================================================ -->
-
-*[Conclusion to be written once analysis is finalized.]*
-
-\newpage
 
 # Reproducibility
 
