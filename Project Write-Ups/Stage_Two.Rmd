@@ -1,5 +1,5 @@
 ---
-title: "Tax Shocks and County-Level Migration: Are the Wealthy More Mobile"
+title: "Tax Shocks and County-Level Migration: Are the Wealthy More Mobile?"
 author: "Ben Hobbs & Bergen Miller"
 date: "`r Sys.Date()`"
 output:
@@ -25,6 +25,7 @@ required_pkgs = c("tidyverse", "binsreg", "fixest", "tigris", "sf",
                    "scales", "here", "knitr", "rmarkdown")
 new_pkgs = required_pkgs[!sapply(required_pkgs, requireNamespace, quietly = TRUE)]
 if (length(new_pkgs) > 0) install.packages(new_pkgs)
+
 # -------------------------------------------------------------------------------
 
 library(tidyverse)
@@ -82,11 +83,12 @@ computed separately for high-income (AGI > \$200k) and low-income (AGI $\leq$ \$
 
 # Data Construction
 
-<!-- ============================================================ -->
-<!-- Bergen: Please fill in this section.                         -->
-<!-- ============================================================ -->
+All the data we use is scraped from the IRS Statistics of Income (SOI) webpage. The two data series we use are county-level aggregates of household income and tax statistics during the period of 2011-2022. The IRS bins households by adjusted gross income (AGI), so information about households with AGI above \$200k is separate from those with AGI below \$200k (we combine all the other AGI bins and call these two groups high and low-income households). For future stages of this project, we can use this segmentation of data to observe differences in tax rates for regular people ($200k AGI is about 95th percentile) separately from differences in tax rates for very high-income people. To protect privacy, the counties where the number of tax returns in an AGI bin is fewer than 20 have all the values for that county-year-AGI bin combination suppressed to zero.
 
-*[Data construction to be added.]*
+Migration data comes from a separate series of publications also from SOI. It includes the number of tax returns which were filed in one county in year 1 and another in year 2, the fips codes of those two counties, the number of people represented in the tax returns, and the total AGI of these tax returns in the second year. We construct a panel of all the county migration pair-year combinations with various income and tax statistics about the two counties. Similar to the income and tax data, if the number of tax returns in a county pair-year combination is fewer than 10, the values for that observation are suppressed to -1.
+
+Our analysis is not so concerned with the extensive margin (a county having any migrants), so we drop all observations where migration data are suppressed to -1. These observations are entirely very small counties, and we expect this decision not to bias any estimates. In the case where a county's income data is suppressed, the effective tax rates are NaN, and those counties are omitted from regressions.
+
 
 \newpage
 
@@ -218,7 +220,7 @@ high-income departures land to the right of that line.
 
 \newpage
 
-# Causal Analysis: New York's 2021 Tax Increase
+# Semi-causal Analysis: New York's 2021 Tax Increase
 
 In 2021, New York State raised its top marginal income tax rate from **6.85% to 9.85%**
 on income exceeding \$1M. Our strategy capitalizes on the fact that some destination counties 
@@ -384,13 +386,43 @@ sorting as a competing explanation alongside tax avoidance.
 
 # Regression Analysis
 
-<!-- ============================================================ -->
-<!-- Bergen: Add regression tables and interpretation here.       -->
-<!-- See Analysis/Regression 1 - DD with only migration and       -->
-<!-- policy change.R for the current DiD specification.           -->
-<!-- ============================================================ -->
+For the first regression, to establish the type of analysis we intend to conduct, we estimate the following equation:
 
-*[Regression results and interpretation to be added.]*
+$log(n) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$
+
+where n is the number of tax returns moving from one county to another, $Treat_c$ is an indicator for if the county in year 1 was in New York, and $Post_t$ is an indicator for if the year of the observation was 2020 or 2021 (to capture people who moved anticipating the increase in taxes as well as people responding to the increase by leaving the following year).
+
+We estimate the following values:
+
+$\beta_1 = -0.0089\ \ \      (0.0075)$
+
+$\beta_2 =  0.2366^{\ast\ast\ast}\  (0.0035)$
+
+$\beta_3 =  0.0677^{\ast\ast\ast}\  (0.0176)$
+
+$***$ indicates significance to 99.9% confidence.
+
+There was a 23.7% increase in migration among counties outside of New York from the 2011-2020 average to the 2020-2022 average. The increase between the two periods for people leaving New York was only 6.8%. Despite the New York State tax increase, the number of New Yorkers fleeing the state increased by a smaller ratio than the number of people fleeing anywhere else.
+
+So the tax increase did not produce (or happen to occur at the same time as) a massive exodus of New Yorkers. Was there any change in the average income of people leaving New York relative to people leaving anywhere else?
+
+For this, we estimate the following regression:
+
+$log(\frac{AGI}{n}) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$
+
+
+The only difference is that number of returns has been replaced by mean AGI of those tax returns. We estimate the following coefficients:
+
+$\beta_1 = 0.1871^{\ast\ast\ast}\  (0.0036)$
+
+$\beta_2 = 0.2568^{\ast\ast\ast}\  (0.0017)$
+
+$\beta_3 = 0.0693^{\ast\ast\ast}\  (0.0085)$
+
+The average income of people moving out of New York State during 2011-2022 was 19% higher than the people leaving anywhere else.
+There was a 26% increase in mean AGI of people leaving a county outside of NY from the 2011-2020 average to the 2020-2022 average.
+The increase in mean AGI of people leaving NY from the 2011-2020 average to the 2020-2022 average was only 7%. This corroborates the estimates in the first estimating equation, namely that the well-monied New Yorkers did not obviously flee the 2021 tax hike.
+
 
 \newpage
 

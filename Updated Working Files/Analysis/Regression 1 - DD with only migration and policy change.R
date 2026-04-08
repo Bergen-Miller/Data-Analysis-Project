@@ -32,7 +32,7 @@ df_reg = df |>
 # treat*post is the DiD coefficient of interest.
 
 model1 = feols(
-  log(n1) ~ treat * post + lowTaxDiff + highTaxDiff,
+  log(n1) ~ treat * post,
   data = df_reg
 )
 
