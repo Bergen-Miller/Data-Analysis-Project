@@ -8,7 +8,7 @@ All data come from the IRS Statistics of Income (SOI) county-level income and mi
 
 To identify causal effects we exploit three state-level policy shocks:
 
-1. **New Jersey (2018):** top marginal rate raised from 8.97% to 10.75% on income above $5M; threshold later lowered to $1M effective 2021.
+1. **New Jersey (2018):** top marginal rate raised from 8.97% to 10.75% on income above \$5M; threshold later lowered to \$1M effective 2021.
 2. **New York State (2021):** top marginal rate raised from 6.85% to 9.85% on income above $1M.
 3. **Delaware (2018):** estate tax repealed (previously 16% on inheritances above $5.49M).
 
