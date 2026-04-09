@@ -117,9 +117,9 @@ animate(
   renderer = gifski_renderer()
 )
 
-anim_save("Updated Working Files/Analysis/manhattan_exodus_animated.gif")
+anim_save("Output/Visualizations/manhattan_exodus_animated.gif")
 
-message("Animation saved to: Updated Working Files/Analysis/manhattan_exodus_animated.gif")
+message("Animation saved to: Output/Visualizations/manhattan_exodus_animated.gif")
 
 
 # ============================================================
@@ -169,7 +169,8 @@ staticMapData = counties_sf |>
 # Diverging color scale: blue = gained NY migrants, red = lost.
 # Layer 1: all counties in light gray for the country background.
 # Layer 2: only counties in nyChange colored; the rest stay gray.
-ggplot(staticMapData) +
+nyMigrationChangeMap = 
+  ggplot(staticMapData) +
   geom_sf(data = counties_sf, fill = "gray88", color = "white",
           linewidth = 0.15) +
   geom_sf(aes(fill = pct_change_capped), color = "white", linewidth = 0.15) +
@@ -188,3 +189,6 @@ ggplot(staticMapData) +
     subtitle = "Percent change in arrivals from NY State: avg. 2021–2022 vs. avg. through 2020"
   ) +
   map_theme
+
+ggsave('Output/Visualizations/NY_Emigration_Change_at_Tax_Policy-Map.pdf', 
+       plot=nyMigrationChangeMap)

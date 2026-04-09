@@ -8,17 +8,9 @@ output:
     toc_depth: 2
     number_sections: true
     fig_caption: true
-    fig_width: 6.5
-    fig_height: 4
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = FALSE,
-  warning = FALSE,
-  message = FALSE,
-  fig.align = "center"
-)
 
 # ---- Auto-install any missing packages ----------------------------------------
 required_pkgs = c("tidyverse", "binsreg", "fixest", "tigris", "sf",
@@ -27,7 +19,6 @@ new_pkgs = required_pkgs[!sapply(required_pkgs, requireNamespace, quietly = TRUE
 if (length(new_pkgs) > 0) install.packages(new_pkgs)
 
 # -------------------------------------------------------------------------------
-
 library(tidyverse)
 library(binsreg)
 library(fixest)
@@ -38,18 +29,21 @@ library(here)
 
 # here() finds the project root via the .Rproj or .git file, so paths work
 # correctly on any machine regardless of where RStudio's working directory is set.
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  out.width='100%'
+)
+
 options(tigris_use_cache = TRUE) # census shapefiles download once, then cache
 
 load(here("Updated Working Files", "Clean Data", "cleanMigrationData.RData"))
 
-# Pre-compute county shapefile once for all map chunks.
-# Requires internet on first run; subsequent runs use the local tigris cache.
-counties_sf = counties(cb = TRUE, resolution = "20m", year = 2020) |>
-  filter(!STATEFP %in% c("02", "15", "72")) |>
-  mutate(fips = as.numeric(paste0(STATEFP, COUNTYFP))) |>
-  select(fips, geometry) |>
-  st_transform(5070)
 ```
+
 
 \newpage
 
@@ -103,19 +97,8 @@ to causal identification. We ask two preliminary questions:
 
 ## Migrants' Wealth vs. High-Income Tax Differential
 
-```{r fig1-compute, include=FALSE}
-p1 = binsreg(df$agi / df$n1, df$highTaxDiff, line = c(3, 3))
-```
-
-```{r fig1, fig.cap="Binscatter of migrants' per-capita AGI against the difference in effective high-income tax rates between destination and origin county. Tax differential > 0 means the destination county imposes a higher effective tax burden on high-income households. Each dot represents an equal-sized bin of county-pair observations; the line is a polynomial fit through the bin means."}
-p1$bins_plot +
-  coord_cartesian(xlim = c(-0.10, 0.10)) +
-  labs(
-    title = "Migrants' Income vs. High-Income Tax Premium at Destination",
-    subtitle = "All U.S. county-pairs, 2011-2022",
-    x = "High-Income Tax Rate Differential (Destination to Origin)",
-    y = "Migrants' Per-Capita AGI ($000s)"
-  )
+```{r, out.width='90%'}
+knitr::include_graphics(here::here("Output/Visualizations/Migrant_per-capita_AGI_vs_High-Income_Tax_Differential.pdf"))
 ```
 
 The downward slope indicates that wealthier migrants tend to move toward counties with
@@ -128,19 +111,8 @@ This is consistent with the basic prediction of the fiscal sorting model.
 
 ## Migrants' Wealth vs. Low-Income Tax Differential
 
-```{r fig2-compute, include=FALSE}
-p2 = binsreg(df$agi / df$n1, df$lowTaxDiff, line = c(3, 3))
-```
-
-```{r fig2, fig.cap="Same as Figure 1 but using the effective tax rate for low-income households (AGI $\\leq$ \\$200k). Comparing the slope here to Figure 1 reveals whether high-income movers are more tax-sensitive than low-income movers."}
-p2$bins_plot +
-  coord_cartesian(xlim = c(-0.10, 0.10)) +
-  labs(
-    title = "Migrants' Income vs. Low-Income Tax Premium at Destination",
-    subtitle = "All U.S. county-pairs, 2011-2022",
-    x = "Low-Income Tax Rate Differential (Destination to Origin)",
-    y = "Migrants' Per-Capita AGI ($000s)"
-  )
+```{r}
+knitr::include_graphics(here::here("Output/Visualizations/Migrant_per-capita_AGI_vs_Low-Income_Tax_Differential.pdf"))
 ```
 
 The pattern here is similar to Figure 1, but the slope is shallower. Migrants' income is
@@ -163,26 +135,8 @@ destinations. A positive slope, which is what we observe, suggests something mor
 nuanced: the wealthiest Manhattan leavers tend to relocate to other expensive, high-tax
 metros (San Francisco, Boston, Seattle), rather than moving purely to minimize taxes.
 
-```{r manhattan-data, include=FALSE}
-manExodus = df |> filter(y1_fips == 36061)
-positiveManExodus = manExodus |> filter(agi > 0)
-```
-
-## Binscatter: Manhattan Emigrants
-
-```{r fig3-compute, include=FALSE}
-p3 = binsreg(manExodus$agi / manExodus$n1, manExodus$highTaxDiff, line = c(3, 3))
-```
-
-```{r fig3, fig.cap="Binscatter of per-capita AGI vs. destination high-income tax differential for all people leaving Manhattan. Each bin aggregates county-pair observations with similar tax differentials."}
-p3$bins_plot +
-  coord_cartesian(xlim = c(-0.15, 0.05)) +
-  labs(
-    title = "Manhattan Emigrants: Wealth vs. Destination Tax Rate",
-    subtitle = "People leaving Manhattan (FIPS 36061), all years",
-    x = "High-Income Tax Rate Differential (Destination to Origin)",
-    y = "Migrants' Per-Capita AGI ($000s)"
-  )
+```{r, out.width='90%'}
+knitr::include_graphics(here::here("Output/Visualizations/Manhattan_Emigrants_mean_AGI_vs_Destination_High-Income_Tax_Differential.pdf"))
 ```
 
 The curve peaks in the middle of the tax differential range and falls on both ends. The
@@ -195,30 +149,6 @@ supports our decision to move to a log scale in the next figure.
 
 \newpage
 
-## Scatter with Smoother: Manhattan Emigrants (Log Scale)
-
-```{r fig4, fig.cap="Smoothed scatter of log per-capita AGI against destination high-income tax differential for Manhattan emigrants with positive AGI. Logging compresses the right skew in income. The red dashed line marks destinations with the same effective tax rate as Manhattan. The upward slope indicates wealthier Manhattan leavers are heading to \\textit{higher}-tax destinations, consistent with relocation to other high-income metros rather than tax-driven flight."}
-
-ggplot(positiveManExodus, aes(x = highTaxDiff, y = log(agi / n1))) +
-  geom_point(alpha = 0.35, size = 1.2, color = "gray40") +
-  geom_smooth(method = "loess", color = "blue", se = TRUE) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "red", linewidth = 0.6) +
-  labs(
-    title = "Manhattan Emigrants: Log Income vs. Destination Tax Rate",
-    subtitle = "Positive-AGI observations only; all years",
-    x = "High-Income Tax Rate Differential (Destination to Origin)",
-    y = "Log Migrants' Per-Capita AGI"
-  )
-```
-
-There is a gradual positive slope, indicating wealthier Manhattan leavers
-are not fleeing to the lowest-tax destinations, they are moving to places with
-comparable or even higher effective tax rates. This is consistent with sorting on
-amenities (such as job markets, schools, cost of living) rather than taxes alone. The red dashed
-line at zero marks destinations with the same effective rate as Manhattan; the bulk of
-high-income departures land to the right of that line.
-
-\newpage
 
 # Semi-causal Analysis: New York's 2021 Tax Increase
 
@@ -242,43 +172,8 @@ where leaving at an increased rate after the tax increase.
 > (moves in 2020); the post-shock period averages `year %in% c(2020, 2021)` (moves
 > in 2021 and 2022).
 
-```{r ny-data, include=FALSE}
-nyExodus = df |> filter(floor(y1_fips / 1000) == 36 & floor(y2_fips / 1000) != 36)
-
-# Pre-shock: per-capita AGI and flow count from year 2019 (moves in 2020)
-baseline = nyExodus |>
-  filter(year == 2019) |>
-  mutate(pcAgiPre = agi / n1, n1_pre = n1) |>
-  select(y1_fips, y2_fips, pcAgiPre, n1_pre)
-
-# Post-shock: average annual flow across years 2020 and 2021 (moves in 2021 and 2022)
-postFlows = nyExodus |>
-  filter(year %in% c(2020, 2021)) |>
-  group_by(y1_fips, y2_fips) |>
-  summarize(n1_post = mean(n1, na.rm = TRUE), .groups = "drop")
-
-finalNyExodus = baseline |>
-  inner_join(postFlows, by = c("y1_fips", "y2_fips")) |>
-  filter(pcAgiPre > 0 & n1_pre > 0)
-```
-
-```{r fig5-compute, include=FALSE}
-p5 = binsreg(
-  finalNyExodus$n1_post / finalNyExodus$n1_pre - 1,
-  log(finalNyExodus$pcAgiPre),
-  line = c(3, 3)
-)
-```
-
-```{r fig5, fig.cap="Binscatter of the proportional change in NY out-migration flows (average of 2021-2022 moves vs. the 2020 pre-shock) against the log per-capita AGI of migrants in the pre-shock year. The red dashed line at zero indicates no change. Destinations on the right attracted wealthier New Yorkers before the shock; a positive slope would imply those destinations attracted proportionally more New Yorkers after the 2021 tax increase."}
-p5$bins_plot +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "red", linewidth = 0.6) +
-  labs(
-    title = "NY Tax Shock: Change in Out-Migration by Destination Wealth",
-    subtitle = "NY-origin county-pairs; avg. post-shock flows (2021-2022) vs. pre-shock baseline (2020)",
-    x = "Log Per-Capita AGI of Destination (pre-shock baseline)",
-    y = "Proportional Change in Migration Flow"
-  )
+```{r}
+knitr::include_graphics(here::here("Output/Visualizations/Change_in_flow_after_NY_tax_hike_vs_pre-tax-hike_migrant_mean_agi.pdf"))
 ```
 
 The slope is relatively flat and noisy, with no strong positive trend across the range
@@ -299,72 +194,8 @@ the year taxes went up?
 
 ## Where Did NY Migrants Go? (Before vs. After 2021)
 
-```{r map-data, include=FALSE}
-# Pre-shock: average annual inflows from any NY county, years <= 2019
-# (moves through 2020, before the NY rate increase took effect)
-nyFlowsPre = df |>
-  filter(floor(y1_fips / 1000) == 36,
-         floor(y2_fips / 1000) != 36,
-         year <= 2019) |>
-  group_by(y2_fips, year) |>
-  summarize(n1 = sum(n1, na.rm = TRUE), .groups = "drop") |>
-  group_by(y2_fips) |>
-  summarize(n1_pre = mean(n1), .groups = "drop")
-
-# Post-shock: average annual inflows across years 2020 and 2021
-# (moves during 2021 and 2022)
-nyFlowsPost = df |>
-  filter(floor(y1_fips / 1000) == 36,
-         floor(y2_fips / 1000) != 36,
-         year %in% c(2020, 2021)) |>
-  group_by(y2_fips, year) |>
-  summarize(n1 = sum(n1, na.rm = TRUE), .groups = "drop") |>
-  group_by(y2_fips) |>
-  summarize(n1_post = mean(n1), .groups = "drop")
-
-# Percent change; exclude very small values
-nyChange = nyFlowsPre |>
-  inner_join(nyFlowsPost, by = "y2_fips") |>
-  filter(n1_pre >= 5) |>
-  mutate(pct_change_capped = pmax(pmin((n1_post / n1_pre - 1) * 100, 100), -100))
-
-staticMapData = counties_sf |>
-  left_join(nyChange, by = c("fips" = "y2_fips"))
-```
-
-```{r fig-map-static, fig.width=7, fig.height=4.5, fig.cap="Percent change in average annual IRS returns arriving from New York State counties: post-shock average (moves in 2021 and 2022) vs. pre-shock average (moves through 2020). Blue counties attracted more NY migrants after the 2021 rate increase; red counties attracted fewer. Counties with fewer than 5 average annual NY arrivals in the pre-shock period are excluded. Color scale capped at $\\pm$100\\% for legibility."}
-
-ggplot(staticMapData) +
-  geom_sf(data = counties_sf, fill = "gray88", color = "white",
-          linewidth = 0.15) +
-  geom_sf(aes(fill = pct_change_capped), color = "white", linewidth = 0.15) +
-  scale_fill_gradient2(
-    low = "#FF0000",
-    mid = "#f5f5f5",
-    high = "#0339f8",
-    midpoint = 0,
-    name = "Change in NY\nIn-Migration",
-    labels = function(x) paste0(ifelse(x > 0, "+", ""), x, "%"),
-    na.value = "gray88",
-    limits = c(-100, 100)
-  ) +
-  labs(
-    title = "Where Did NY Migration Shift After the 2021 Tax Increase?",
-    subtitle = "Percent change in arrivals from NY State: avg. 2021–2022 vs. avg. through 2020"
-  ) +
-  theme_minimal(base_size = 11) +
-  theme(
-    axis.text = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid = element_blank(),
-    plot.background = element_rect(fill = "white", color = NA),
-    panel.background = element_rect(fill = "white", color = NA),
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5, color = "gray30", size = 9),
-    legend.position = "bottom",
-    legend.key.width = unit(2.2, "cm"),
-    legend.key.height = unit(0.35, "cm")
-  )
+```{r, out.width='90%'}
+knitr::include_graphics(here::here('Output/Visualizations/NY_Emigration_Change_at_Tax_Policy-Map.pdf'))
 ```
 
 The map complements the binscatter results. Blue counties absorbed more New York
@@ -388,11 +219,14 @@ sorting as a competing explanation alongside tax avoidance.
 
 For the first regression, to establish the type of analysis we intend to conduct, we estimate the following equation:
 
+
 $log(n) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$
+
 
 where n is the number of tax returns moving from one county to another, $Treat_c$ is an indicator for if the county in year 1 was in New York, and $Post_t$ is an indicator for if the year of the observation was 2020 or 2021 (to capture people who moved anticipating the increase in taxes as well as people responding to the increase by leaving the following year).
 
 We estimate the following values:
+
 
 $\beta_1 = -0.0089\ \ \      (0.0075)$
 
@@ -402,22 +236,26 @@ $\beta_3 =  0.0677^{\ast\ast\ast}\  (0.0176)$
 
 $***$ indicates significance to 99.9% confidence.
 
+
 There was a 23.7% increase in migration among counties outside of New York from the 2011-2020 average to the 2020-2022 average. The increase between the two periods for people leaving New York was only 6.8%. Despite the New York State tax increase, the number of New Yorkers fleeing the state increased by a smaller ratio than the number of people fleeing anywhere else.
 
 So the tax increase did not produce (or happen to occur at the same time as) a massive exodus of New Yorkers. Was there any change in the average income of people leaving New York relative to people leaving anywhere else?
 
 For this, we estimate the following regression:
 
+
 $log(\frac{AGI}{n}) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$
 
 
 The only difference is that number of returns has been replaced by mean AGI of those tax returns. We estimate the following coefficients:
+
 
 $\beta_1 = 0.1871^{\ast\ast\ast}\  (0.0036)$
 
 $\beta_2 = 0.2568^{\ast\ast\ast}\  (0.0017)$
 
 $\beta_3 = 0.0693^{\ast\ast\ast}\  (0.0085)$
+
 
 The average income of people moving out of New York State during 2011-2022 was 19% higher than the people leaving anywhere else.
 There was a 26% increase in mean AGI of people leaving a county outside of NY from the 2011-2020 average to the 2020-2022 average.

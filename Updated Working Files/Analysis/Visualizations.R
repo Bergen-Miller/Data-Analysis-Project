@@ -25,7 +25,7 @@ load('Updated Working Files/Clean Data/cleanMigrationData.RData')
 
 p1 = binsreg(df$agi / df$n1, df$highTaxDiff)
 
-p1$bins_plot +
+p1Plot = p1$bins_plot +
   labs(
     title = "Migrants' Income vs. High-Income Tax Premium at Destination",
     subtitle = "All U.S. county-pairs, 2011–2022",
@@ -36,8 +36,11 @@ p1$bins_plot +
       "has a higher effective tax rate on high-income households than the origin county.",
       sep = "\n"
     )
-  )
+  )  + coord_cartesian(xlim=c(-.15, .15)) +
+  theme(text=element_text(family='serif'))
 
+ggsave("Output/Visualizations/Migrant_per-capita_AGI_vs_High-Income_Tax_Differential.pdf",
+       plot=p1Plot, width=6,height=6)
 
 # ---- Figure 2: Migrants' Wealth vs. Low-Income Tax Differential (All Counties) ----
 #
@@ -48,7 +51,7 @@ p1$bins_plot +
 
 p2 = binsreg(df$agi / df$n1, df$lowTaxDiff)
 
-p2$bins_plot +
+p2Plot = p2$bins_plot +
   labs(
     title = "Migrants' Income vs. Low-Income Tax Premium at Destination",
     subtitle = "All U.S. county-pairs, 2011–2022",
@@ -59,8 +62,11 @@ p2$bins_plot +
       "has a higher effective tax rate on low-income households than the origin county.",
       sep = "\n"
     )
-  )
+  ) + coord_cartesian(xlim=c(-.15, .15)) +
+  theme(text=element_text(family='serif'))
 
+ggsave("Output/Visualizations/Migrant_per-capita_AGI_vs_Low-Income_Tax_Differential.pdf",
+       plot=p2Plot, width=6, height=6)
 
 # ---- Figures 3 & 4: Manhattan Case Study ----
 #
@@ -76,39 +82,43 @@ p2$bins_plot +
 manExodus = df |> filter(y1_fips == 36061)
 positiveManExodus = manExodus |> filter(agi > 0) # keep only positive AGI for log transform
 
-# Figure 3: Binscatter for Manhattan
+# ---- Figure 3: Binscatter for Manhattan ----
 p3 = binsreg(manExodus$agi / manExodus$n1, manExodus$highTaxDiff)
 
-p3$bins_plot +
+p3Plot = p3$bins_plot +
   labs(
     title = "Manhattan Emigrants: Wealth vs. Destination Tax Rate",
     subtitle = "People leaving Manhattan (FIPS 36061), all years",
     x = "High-Income Tax Rate Differential (Destination − Origin)",
     y = "Migrants' Per-Capita AGI ($000s)",
     caption = "Binscatter of Manhattan-origin county-pair observations."
-  )
+  ) + coord_cartesian(xlim=c(-.15, 0)) + theme(text=element_text(family='serif'))
 
-# Figure 4: Scatter with smoother on log scale
+ggsave("Output/Visualizations/Manhattan_Emigrants_mean_AGI_vs_Destination_High-Income_Tax_Differential.pdf",
+       plot=p3Plot, width=6, height=6)
+
+# ---- Figure 4: Scatter with smoother on log scale----
 # Logging per-capita AGI compresses the heavy right skew in income.
 # The dashed vertical line marks destinations with the same tax rate as Manhattan.
-ggplot(positiveManExodus, aes(x = highTaxDiff, y = log(agi / n1))) +
-  geom_point(alpha = 0.35, size = 1.2, color = "gray40") +
-  geom_smooth(method = "loess", color = "steelblue", se = TRUE) +
-  geom_vline(xintercept = 0, linetype = "dashed", color = "firebrick", linewidth = 0.6) +
-  labs(
-    title = "Manhattan Emigrants: Log Income vs. Destination Tax Rate",
-    subtitle = "Positive-AGI observations only; all years",
-    x = "High-Income Tax Rate Differential (Destination − Origin)",
-    y = "Log Migrants' Per-Capita AGI",
-    caption = paste(
-      "Smoothed scatter with 95% confidence band. Red dashed line: destination tax rate = Manhattan's.",
-      "Rightward observations represent moves to higher-tax destinations.",
-      sep = "\n"
-    )
-  )
+
+# ggplot(positiveManExodus, aes(x = highTaxDiff, y = log(agi / n1))) +
+#   geom_point(alpha = 0.35, size = 1.2, color = "gray40") +
+#   geom_smooth(method = "loess", color = "steelblue", se = TRUE) +
+#   geom_vline(xintercept = 0, linetype = "dashed", color = "firebrick", linewidth = 0.6) +
+#   labs(
+#     title = "Manhattan Emigrants: Log Income vs. Destination Tax Rate",
+#     subtitle = "Positive-AGI observations only; all years",
+#     x = "High-Income Tax Rate Differential (Destination − Origin)",
+#     y = "Log Migrants' Per-Capita AGI",
+#     caption = paste(
+#       "Smoothed scatter with 95% confidence band. Red dashed line: destination tax rate = Manhattan's.",
+#       "Rightward observations represent moves to higher-tax destinations.",
+#       sep = "\n"
+#     )
+#   )
 
 
-# ---- Figure 5: NY Tax Shock — Change in Out-Migration by Destination Wealth ----
+# ---- Figure 5: NY Tax Shock — Change in Out-Migration by Previous Migrants' Income ----
 #
 # In 2021, New York State raised its top marginal income tax rate from 6.85% to 9.85%
 # on income exceeding $1M. This is our cleanest policy shock.
@@ -154,17 +164,21 @@ p5 = binsreg(
   log(finalNyExodus$pcAgiPre)
 )
 
-p5$bins_plot +
+p5Plot = p5$bins_plot +
   geom_hline(yintercept = 0, linetype = "dashed", color = "firebrick", linewidth = 0.6) +
   labs(
-    title = "NY Tax Shock: Change in Out-Migration by Destination Wealth (2019→2020/2021)",
+    title = "NY Tax Shock: Change in Out-Migration by Destination's Previous Migrants' Income",
     subtitle = "NY-origin county-pairs; avg. post-shock flows (2021–2022) vs. pre-shock baseline (2020)",
-    x = "Log Per-Capita AGI of Destination (2019 pre-shock baseline)",
-    y = "Proportional Change in Migration Flow",
+    x = "Log Per-Capita AGI of Migrants to Destination (2019 pre-shock baseline)",
+    y = "Proportional Change in Migration Flow During and After NY Tax Hike",
     caption = paste(
       "Binscatter. Y-axis: (avg. 2020–2021 label flow / 2019 label flow) − 1; zero = no change (red dashed).",
       "X-axis: wealth of people moving from NY to each destination in the pre-shock year.",
       "Destinations attracting wealthier NY migrants before the shock are on the right.",
       sep = "\n"
     )
-  )
+  ) + coord_cartesian(xlim=c(3, 6)) +
+  theme(text=element_text(family='serif'))
+
+ggsave("Output/Visualizations/Change_in_flow_after_NY_tax_hike_vs_pre-tax-hike_migrant_mean_agi.pdf",
+       plot=p5Plot, width=8, height=6, units='in')

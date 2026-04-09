@@ -30,6 +30,12 @@ Updated Working Files/
     Visualizations.R - descriptive binscatter plots
     Map Visualization.R - choropleth map and animated GIF of NY out-migration
     Regression 1 - DD with only migration and policy change.R - DiD models
+    
+Output/
+  Visualizations/
+    Plots to describe data
+  Quantitative Estimates/
+      Will contain regression results
 
 Project Write-Ups/
   Stage_Two.Rmd - Stage 2 submission document
