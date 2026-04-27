@@ -49,6 +49,6 @@ model2 = feols(
 
 # Nice output table
 etable(model2)
-# Loads: df (county-pair migration panel, 2011b
+# Loads: df (county-pair migration panel, 2011b)
 
 save(model1, model2, file='Output/Quantitative Estimates/NY Tax Hike DD Regression Results.RData')
