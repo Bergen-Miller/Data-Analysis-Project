@@ -182,3 +182,99 @@ p5Plot = p5$bins_plot +
 
 ggsave("Output/Visualizations/Change_in_flow_after_NY_tax_hike_vs_pre-tax-hike_migrant_mean_agi.pdf",
        plot=p5Plot, width=8, height=6, units='in')
+
+
+# ---- Figure 6: NJ Tax Shock — Change in Out-Migration by Previous Migrants' Income ----
+#
+# NJ raised its top marginal rate effective tax year 2018.
+# Pre-shock baseline: year == 2016 (moves during 2017, last pre-shock year).
+# Post-shock: year %in% c(2017, 2018) (moves during 2018-2019).
+
+njExodus = df |> filter(floor(y1_fips / 1000) == 34 & floor(y2_fips / 1000) != 34)
+
+baseline_nj = njExodus |>
+  filter(year == 2016) |>
+  mutate(pcAgiPre = agi / n1, n1_pre = n1) |>
+  select(y1_fips, y2_fips, pcAgiPre, n1_pre)
+
+postFlows_nj = njExodus |>
+  filter(year %in% c(2017, 2018)) |>
+  group_by(y1_fips, y2_fips) |>
+  summarize(n1_post = mean(n1, na.rm = TRUE), .groups = "drop")
+
+finalNjExodus = baseline_nj |>
+  inner_join(postFlows_nj, by = c("y1_fips", "y2_fips")) |>
+  filter(pcAgiPre > 0 & n1_pre > 0)
+
+p6 = binsreg(
+  finalNjExodus$n1_post / finalNjExodus$n1_pre - 1,
+  log(finalNjExodus$pcAgiPre)
+)
+
+p6Plot = p6$bins_plot +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "firebrick", linewidth = 0.6) +
+  labs(
+    title = "NJ Tax Shock: Change in Out-Migration by Destination's Previous Migrants' Income",
+    subtitle = "NJ-origin county-pairs; avg. post-shock flows (2018-2019) vs. pre-shock baseline (2017)",
+    x = "Log Per-Capita AGI of Migrants to Destination (2016 pre-shock baseline)",
+    y = "Proportional Change in Migration Flow After NJ Tax Hike",
+    caption = paste(
+      "Binscatter. Y-axis: (avg. 2017-2018 label flow / 2016 label flow) - 1; zero = no change (red dashed).",
+      "X-axis: wealth of people moving from NJ to each destination in the pre-shock year.",
+      "Destinations attracting wealthier NJ migrants before the shock are on the right.",
+      sep = "\n"
+    )
+  ) + coord_cartesian(xlim = c(3, 6)) +
+  theme(text = element_text(family = "serif"))
+
+ggsave("Output/Visualizations/NJ_semicausal_binscatter.pdf",
+       plot = p6Plot, width = 8, height = 6, units = "in")
+
+
+# ---- Figure 7: DE Estate Tax Repeal — Change in In-Migration by Previous Migrants' Income ----
+#
+# Delaware repealed its estate tax effective 2018. Treatment is on the DESTINATION side:
+# we ask whether flows *into* Delaware rose after the repeal, and whether the income
+# composition of those in-migrants changed. Origins within Delaware are excluded.
+# Pre-shock baseline: year == 2016. Post-shock: year %in% c(2017, 2018).
+
+deInflux = df |> filter(floor(y2_fips / 1000) == 10 & floor(y1_fips / 1000) != 10)
+
+baseline_de = deInflux |>
+  filter(year == 2016) |>
+  mutate(pcAgiPre = agi / n1, n1_pre = n1) |>
+  select(y1_fips, y2_fips, pcAgiPre, n1_pre)
+
+postFlows_de = deInflux |>
+  filter(year %in% c(2017, 2018)) |>
+  group_by(y1_fips, y2_fips) |>
+  summarize(n1_post = mean(n1, na.rm = TRUE), .groups = "drop")
+
+finalDeInflux = baseline_de |>
+  inner_join(postFlows_de, by = c("y1_fips", "y2_fips")) |>
+  filter(pcAgiPre > 0 & n1_pre > 0)
+
+p7 = binsreg(
+  finalDeInflux$n1_post / finalDeInflux$n1_pre - 1,
+  log(finalDeInflux$pcAgiPre)
+)
+
+p7Plot = p7$bins_plot +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "firebrick", linewidth = 0.6) +
+  labs(
+    title = "DE Estate Tax Repeal: Change in In-Migration by Origin's Previous Migrants' Income",
+    subtitle = "DE-destination county-pairs; avg. post-shock flows (2018-2019) vs. pre-shock baseline (2017)",
+    x = "Log Per-Capita AGI of Migrants Arriving in Delaware (2016 pre-shock baseline)",
+    y = "Proportional Change in In-Migration Flow After DE Estate Tax Repeal",
+    caption = paste(
+      "Binscatter. Y-axis: (avg. 2017-2018 label flow / 2016 label flow) - 1; zero = no change (red dashed).",
+      "X-axis: wealth of people moving to Delaware from each origin in the pre-shock year.",
+      "Origins sending wealthier migrants to Delaware before the repeal are on the right.",
+      sep = "\n"
+    )
+  ) + coord_cartesian(xlim = c(3, 6)) +
+  theme(text = element_text(family = "serif"))
+
+ggsave("Output/Visualizations/DE_semicausal_binscatter.pdf",
+       plot = p7Plot, width = 8, height = 6, units = "in")
+
