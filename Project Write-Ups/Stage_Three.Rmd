@@ -129,7 +129,7 @@ The figure below plots the proportional change in migration flow (average of 202
 knitr::include_graphics(here::here("Output/Visualizations/Change_in_flow_after_NY_tax_hike_vs_pre-tax-hike_migrant_mean_agi.pdf"))
 ```
 
-The binscatter suggests little positive relationship between pre-shock migrant income and the subsequent increase in out-migration from New York. If anything, the slope trends downward and becomes quite noisy for lower-income destinations, which does not support a clean story in which the tax increase disproportionately pushed out the highest-income movers.
+The binscatter suggests a negative relationship between pre-shock migrant income and the subsequent increase in out-migration from New York. Among previously low-income migration channels, the relationship is noisy, but the percent increase after the NY tax hike in county migration is sharply negative for counties whose previous recipients from NY had an average income of more than $116k.
 
 The map below shows the *geographic* version of the same question: which parts of the country absorbed New York migrants, and how did that pattern shift in the year taxes went up?
 
@@ -153,7 +153,7 @@ $$log(\frac{AGI}{n}) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Tre
 
 For all income specifications and income-trend plots, we drop county-pair observations with non-positive migrant per-capita AGI before taking logs. These are rare rows where the IRS migration file reports zero or negative aggregate AGI, and leaving them in would create artificial $-\infty$ values and misleading dips in the plotted averages.
 
-Table 1
+
 ```{r ny-coef-table}
 knitr::kable(
   data.frame(
@@ -189,7 +189,7 @@ The figures below show mean log migration volume and mean log per-capita AGI ove
 
 > **Note:** The sharp level jump between calendar 2013 and 2014 in the volume trends is best understood as a reporting break in the IRS county-to-county migration files, not as a sudden nationwide surge in out-migration. The plot compares the IRS `2012-2013` file to the `2013-2014` file, and the IRS's `2013-2014 Migration Data Users Guide` states that the county-file disclosure threshold was raised from 10 returns to 20 returns, with additional county-level suppression. In our cleaned data, nearly 47% of county-pair observations in calendar 2012-2013 had only 10-19 returns, while those small flows are almost entirely absent from calendar 2014 onward. Mechanically removing many small flows raises the average of $\log(n)$, so the post-2013 level shift should not be interpreted as an economic break in migration behavior.
 
-```{r fig-ny-did-volume, out.width='90%', fig.cap="Mean log out-migration volume over time for New York counties vs. other origin states."}
+```{r fig-ny-did-volume, out.width='100%', fig.cap="Mean log out-migration volume over time for New York counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NY_DiD_volume_trends.pdf"))
 ```
 
@@ -197,7 +197,7 @@ The volume trends plot shows that New York out-migration moved broadly with the 
 
 > **Note:** A small number of county-pair observations in the IRS migration files report zero or negative total AGI even when the number of returns is positive. Because the income trends and income regressions use $\log(AGI / n)$, keeping those rows would mechanically create artificial $-\infty$ values and misleading dips in the plotted averages. We therefore drop observations with non-positive migrant per-capita AGI before taking logs in the income specifications only. This is appropriate here because the goal of these plots is to compare the intensive-margin income composition of observed migration flows, not to treat zero or negative reported AGI as economically meaningful average migrant income.
 
-```{r fig-ny-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for New York counties vs. other origin states."}
+```{r fig-ny-did-income, out.width='100%', fig.cap="Mean log migrant per-capita AGI over time for New York counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NY_DiD_income_trends.pdf"))
 ```
 
@@ -213,7 +213,7 @@ New Jersey raised its top marginal income tax rate in 2018, increasing the top r
 knitr::include_graphics(here::here("Output/Visualizations/NJ_semicausal_binscatter.pdf"))
 ```
 
-The binscatter below suggests little relationship between pre-policy-change migrant incomes and the subsequent change in the number of households leaving New Jersey.
+The binscatter above suggests no relationship between pre-policy-change migrant incomes and the subsequent change in the number of households leaving New Jersey. Rather, everybody was less likely to leave NJ after the policy change.
 
 We estimate the effect on out-migration volume:
 
@@ -223,7 +223,7 @@ where $Treat_c = 1$ if the origin county is in New Jersey and $Post_t = 1$ for y
 
 $$log\left(\frac{AGI}{n}\right) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat \times Post)_{c,t} + \epsilon_{c,t}$$
 
-Table 2
+
 ```{r nj-coef-table}
 knitr::kable(
   data.frame(
@@ -247,14 +247,14 @@ The New Jersey estimates do not show strong evidence of a large response to the 
 
 The figures below show mean log migration volume and mean log per-capita AGI over time for New Jersey counties (treated) versus all other origin counties (control). The dashed line marks the start of the post period.
 
-```{r fig-nj-did-volume, out.width='90%', fig.cap="Mean log out-migration volume over time for New Jersey counties vs. other origin states."}
+```{r fig-nj-did-volume, out.width='100%', fig.cap="Mean log out-migration volume over time for New Jersey counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NJ_DiD_volume_trends.pdf"))
 ```
 
 The volume trends plot shows that New Jersey out-migration moves broadly with the control group, and no clear post 2017 surge that would indicate that the change in tax policy resulted in a state-wide exodus.
 
 
-```{r fig-nj-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for New Jersey counties vs. other origin states."}
+```{r fig-nj-did-income, out.width='100%', fig.cap="Mean log migrant per-capita AGI over time for New Jersey counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NJ_DiD_income_trends.pdf"))
 ```
 
@@ -299,17 +299,17 @@ knitr::kable(
 )
 ```
 
-Again, the Delaware regression results provide evidence against the notion that the estate tax repeal would produce a large increase in migration into Delaware. The volume model shows that Delaware destination flows were lower than other flows on average, while the post-period coefficient shows that migration volume rose across the board after 2017 in the control group. The interaction coefficient is negative but not statistically significant, meaning that we cannot conclude that Delaware received either more or fewer migrants compared to other destinations post-repeal. The income model, which excludes non-positive migrant per-capita AGI before logging, shows that migrants moving to Delaware had higher average AGI than migrants moving to other destinations; however, the interaction term is small, positive, and statistically insignificant. Overall, the repeal does not appear to have produced a clear increase in either the number or average income of migrants moving to Delaware.
+Again, the Delaware regression results provide evidence against the notion that the estate tax repeal would produce a large increase in migration into Delaware. The volume model shows that Delaware destination flows were lower than other flows on average, while the post-period coefficient shows that migration volume rose across the board after 2017 in the control group. The interaction coefficient is negative but not statistically significant, meaning that we cannot conclude that Delaware received either more or fewer migrants compared to other destinations post-repeal. The income model, which excludes non-positive migrant per-capita AGI before logging, shows that migrants moving to Delaware had higher average AGI than migrants moving to other destinations; however, the interaction term is small, positive, and statistically insignificant. Overall, the estate tax repeal does not appear to have any relationship with an increase in either the number or average income of migrants moving to Delaware.
 
 The figures below show mean log in-migration volume and mean log per-capita AGI over time for flows into Delaware counties (treated) versus flows into all other destinations (control). The dashed line marks the start of the post period.
 
-```{r fig-de-did-volume, out.width='90%', fig.cap="Mean log in-migration volume over time for Delaware destinations vs. other destinations."}
+```{r fig-de-did-volume, out.width='100%', fig.cap="Mean log in-migration volume over time for Delaware destinations vs. other destinations."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/DE_DiD_volume_trends.pdf"))
 ```
 
 The volume trends plot shows no clear post 2017 increase in Delaware in-migration relative to other destinations, suggesting that the tax repeal did not visibly change Delaware's migration volume trend.
 
-```{r fig-de-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for Delaware destinations vs. other destinations."}
+```{r fig-de-did-income, out.width='100%', fig.cap="Mean log migrant per-capita AGI over time for Delaware destinations vs. other destinations."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/DE_DiD_income_trends.pdf"))
 ```
 
@@ -317,11 +317,60 @@ The income trends plot shows that migrants moving into Delaware had relatively h
 
 \newpage
 
+
+# Exploring Variation in Tax Rates
+
+To better understand the nature of these policy changes and contrast them to other sources of variation between counties in effective tax rates, we run the following TWFE:
+
+$$log(n)_{p,t} = \beta_1I(Tax Shock)_{p,t-1} + \beta_2log(\frac{Agi}{n})_{p, t-1} + \beta_3I(TaxShock)_{p, t}*log(\frac{Agi}{n})_{p, t-1} + \gamma_{c1} + \delta_t + \epsilon_{p,t}$$
+Where n is the number of households in a county pair-year observation. The indicator for tax shock is one if the receiving county experienced an increase to the tax rate paid by households with agi above $200k relative to a potential change in the same rate from the sending county from year t-2 to year t-1 beyond a certain value. The second term is the average income of people moving in year t-1 in the county-pair p. The third term is the interaction. The gamma fixed effect is of the county in year 1 of the move. Delta is the fixed effect for year 1 of the move.
+
+These tax shocks are **not** exogenous. This regression answers the question, is there a relationship between the number of people moving between a county pair and the mean income of people who made the same move the previous year. Secondly, does this relationship change if high-income households in the receiving county happened to experience an increase in their taxes relative to the rate paid by households in the 'sending' county. Note that a relative tax increase in the receiving county is congruent to a relative tax decrease in the sending county, and these are different observations in the data (the county-pair for people moving from Gallatin to Missoula county is different from the county-pair for people moving from Missoula to Gallatin county).
+
+Suppose the threshold for the first term is 5 percentage points. There is much variation between counties in tax rates, but for a county's high-income households to experience a 5 percentage point tax increase relative to another is likely a symptom of policy change, although it does not need to be. We test different thresholds, from 0 to 9%, and they are summarized in figure 14.
+
+```{r fig-TWFE-1, out.width='90%', fig.cap="Corellations Between Migrating Population and Previous Migrants' Incomes, Distinguishing Between County-Pairs Experiencing Relative Realized Tax Changes"}
+knitr::include_graphics(here::here("Output/Visualizations/Stage 3/model1_coefficients_receiving_thresholds.pdf"))
+```
+
+From the figure, every choice of relative tax change threshold in the model gives a very precise estimate, of 7%, for the relationship between mean income in the previous year and the migrating population in a pair of counties. **Interpretation:** A 1% increase in the average income of people migrating between a pair of counties is associated with a 0.07% increase in the number of people making the same move the next year. The relationship is very small.
+
+When using 3 percentage points as the requirement to consider a relative tax increase in the receiving county 'substantial', a county experiencing the tax increase reduces the correlation between last year's migrants' incomes and the migrating population this year by a very precise 9.6 percentage points (from +7.3% to -2.3%).
+
+The figure indicates that a county receiving a tax increase (to households above $200k in income) of 3 pp relative to another makes it less likely to attract high-income individuals, but the relationship is **reversed** if it experiences an even larger 8 pp, and reversed again if the change is 9 pp.
+
+
+Next we consider the relationship between last year's migrants' incomes and this year's migrants' incomes. The model we use is: 
+
+$$log(\frac{AGI}{n})_{p,t} = \beta_1I(Tax Shock)_{p,t-1} + \beta_2log(\frac{Agi}{n})_{p, t-1} + \beta_3I(TaxShock)_{p, t}*log(\frac{Agi}{n})_{p, t-1} + \gamma_{c1} + \delta_t + \epsilon_{p,t}$$
+
+Figure 15 summarizes results for different thresholds for 'substantial' tax increases.
+
+```{r fig-TWFE-2, out.width='90%', fig.cap="Corellations Between Migrants' Incomes and Previous Migrants' Incomes, Distinguishing Between County-Pairs Experiencing Relative Realized Tax Changes"}
+knitr::include_graphics(here::here("Output/Visualizations/Stage 3/model2_coefficients_receiving_thresholds.pdf"))
+```
+
+Again, the coefficient on last year's migrants' incomes is massively postive and precise. It has been scaled down by an order of magnitude (the estimate is $\hat{\beta}_2 = 1/2$) to not obscure the more interesting picture of the interaction coefficients.
+
+Households with AGI above $200k in a county experiencing an increase in their tax rate of 1 percentage point relative to another reduces the relationship between the average income of people migrating the previous year and the average incomes of people making the same move currently by 2.5 percentage points. Across all county pairs, a 1% increase in the average income of people moving between counties is associated with a 0.52% increase in the average income of people making the same move the next year. This 0.52% figure falls to 0.49% if the receiving county experienced a tax increase of 1 pp relative to the sending county. All the effects of the tax increase indicator are similarly small (although turning positive at 4 pp) until considering an 8 or 9 percentage point increase in the tax rate paid by high-income households in the receiving county relative to the sending county, at which point the affect of experiencing the tax increase decreases the relationship between last year's migrants' mean income and the current year's migrants' mean income from +0.51 to +0.38, which is still positive.
+
+Oddly enough, the two figures looks nearly identical to their counterparts when considering tax hikes in the sending county instead of the receiving county. The relationship between last year's migrants' incomes and this year's migrating population turns negative when the county people are leaving experiences an increase in tax rates.
+
+Something indicating a serious flaw of this exploration is that this TWFE model indicates a county that previously attracts higher-average-income people attracts fewer people if it experiences a 3 pp tax increase relative to where those people are moving from **and if it experiences a 3 pp tax decrease**.
+
+Despite the apparent lack of signal in this TWFE model, it provides a way to proceed with a causal inference mission.
+
 # Causality Discusion
 
-Berg needs to include the results and figures from the Regressions 2 script. Discuss how the DDs for NJ and Delaware disagree with the DD for New York (probably because of the pandemic). Also discuss what the estimates from his TWFEs say.
+There is evidence of the NY tax hike encouraging people to leave NY. The increase in people leaving NY from before the tax change to afterward was 7% higher than the national average, and the incomes of these people increased by 7% more than the national average during the same period. This indicates the tax hike **did** push high-earners out of the state. HOWEVER, the tax hike happened at the same time as the pandemic, and it is almost certain that any increase in people leaving NY state is because the pandemic hit there particularly badly. It also is very likely, although not suggested by out data, that high-earning people are more mobile, so they were especially quick to flee pandemic-era NYC.
 
-That is all to give context for the limitations of our study. Discuss what would need to happen next to make a proper causal inference paper. Contextualize our estimates.
+There is no evidence the NJ tax hike encouraged anybody to leave the state, and it had no effect on the distribution of the incomes of people leaving the state.
+
+There is also no evidence the DE repeal of their estate tax encouraged any flow of people into the state. The increase from before the tax change to after in mean income of people changing counties was 2% greater among people moving into DE than otherwise, but this estimate is not statistically different from zero.
+
+We figure the issue of using the TWFE model above is that the tax 'shocks' are not exogenous. The merits of it is that is gives a very highly powered model to examine the types of people who move between a pair of counties (described by their average incomes) and how the number (and average income) of people moving between these county-pairs changes when the two counties' relative tax levels change. To proceed further, we would use this to motivate more DDs. Some faults of our current DDs is that they do not actually measure the change in taxation in the nominally affected regions. We think the way to proceed toward causal inference is to try to identify what tax variation is exogenous, and regress the actual changes in tax rates against incomes of migrants.
+
+Another problem with this approach to measuring the effect of tax changes is that our data doesn't distinguish between a marginal increase in people earning \$100k relative to people earning \$80 from a single family earning \$1M deciding to move. These two changes in migration decisions are qualitatively different.
 
 \newpage
 

@@ -3,6 +3,7 @@ library(fixest)
 
 load('Updated Working Files/Clean Data/cleanMigrationData.RData')
 
+#
 # ---- Building Tibble for Regression ----
 
 # The purpose of this script is to, without considering statutory policy changes,
@@ -520,7 +521,7 @@ p6
 
 # ---- Saving Results to Output Folder ----
 
-save(model1Results, model2Results,
+save(models1, newModels1, models2, newModels2,
      file='Output/Quantitative Estimates/Regressions_2_TWFEs.RData')
 
 ggsave('Output/Visualizations/Stage 3/current_year_pop_vs_previous_year_agi.pdf',
