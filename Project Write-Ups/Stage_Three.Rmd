@@ -8,6 +8,8 @@ output:
     toc_depth: 2
     number_sections: true
     fig_caption: true
+header-includes:
+  - \usepackage{float}
 ---
 
 ```{r setup, include=FALSE}
@@ -35,6 +37,7 @@ knitr::opts_chunk$set(
   warning = FALSE,
   message = FALSE,
   fig.align = "center",
+  fig.pos = "H",
   out.width='100%'
 )
 
@@ -50,9 +53,9 @@ load(here("Updated Working Files", "Clean Data", "cleanMigrationData.RData"))
 
 We examine whether changes in state-level tax policy encourage high-income households to relocate to lower-tax jurisdictions.
 
-Our primary data source is the IRS Statistics of Income (SOI) series, which publishes county-level income and migration data annually. The income data reported are adjusted gross income (AGI) and taxes paid by households aggregated to the level of county-income bracket-year. The migration data report the number of returns, number of individuals, and cumulative AGI for every county-to-county move in each year. Our sample spans **2011–2022**.
+Our primary data source is the IRS Statistics of Income (SOI) series, which publishes county-level income and migration data annually. The income data reported are adjusted gross income (AGI) and taxes paid by households aggregated to the level of county-income bracket-year. The migration data report the number of returns, number of individuals, and cumulative AGI for every county-to-county move in each year. Our sample spans 2011–2022.
 
-The unit of observation in our analysis is a **county-pair** $\times$ year. So for each origin county, we observe how many people moved to each destination county from a given year to the next, along with the income and tax characteristics of both counties.
+The unit of observation in our analysis is a county-pair $\times$ year. So for each origin county, we observe how many people moved to each destination county from a given year to the next, along with the income and tax characteristics of both counties.
 
 To identify causal effects we will explore three state-level policy shocks with known effective dates:
 
@@ -79,8 +82,7 @@ The figures below explore the unconditional relationships in our data before tur
 
 ## Migrants' Wealth vs. High-Income Tax Differential
 
-Figure 1.
-```{r, out.width='90%'}
+```{r fig-high-tax-diff, out.width='90%', fig.cap="Migrants' income vs. high-income tax premium at destination."}
 knitr::include_graphics(here::here("Output/Visualizations/Migrant_per-capita_AGI_vs_High-Income_Tax_Differential.pdf"))
 ```
 
@@ -88,8 +90,7 @@ The downward slope of the figure indicates that the type of counties into which 
 
 ## Migrants' Wealth vs. Low-Income Tax Differential
 
-Figure 2.
-```{r}
+```{r fig-low-tax-diff, out.width='90%', fig.cap="Migrants' income vs. low-income tax premium at destination."}
 knitr::include_graphics(here::here("Output/Visualizations/Migrant_per-capita_AGI_vs_Low-Income_Tax_Differential.pdf"))
 ```
 
@@ -97,63 +98,61 @@ The pattern here is similar to Figure 1. Migrants' income is still negatively co
 
 # Manhattan Case Study
 
-To reduce cross-sectional noise we will look **Manhattan (New York County, FIPS 36061)**, one of the highest-tax, highest-income counties in the country. We ask: among the people leaving Manhattan NYC in any given year, does the destination county's effective high-income tax rate influence those migrants' average incomes?
+To reduce cross-sectional noise we will look Manhattan (New York County, FIPS 36061), one of the highest-tax, highest-income counties in the country. We ask: among the people leaving Manhattan NYC in any given year, does the destination county's effective high-income tax rate influence those migrants' average incomes?
 
 A negative slope would suggest high-earning Manhattanites prefer moving to lower-tax destinations. A positive slope, which is what we observe, suggests something more nuanced: Manhattan-leavers tend to relocate to other high-tax metros (San Francisco, Boston, Seattle), rather than moving to minimize taxes.
 
-Figure 3.
-```{r, out.width='90%'}
+```{r fig-manhattan-tax-diff, out.width='90%', fig.cap="Manhattan emigrants' wealth vs. destination tax rate."}
 knitr::include_graphics(here::here("Output/Visualizations/Manhattan_Emigrants_mean_AGI_vs_Destination_High-Income_Tax_Differential.pdf"))
 ```
 
 Across every year in our data, figure 3 bins observations by the size of the difference between high-income households' taxes in the destination county and Manhattan County in NYC. Interesting, the bins are such that every measurement of the Conditional Expectation Function has a negative tax differential value (which makes sense, because NYC is a high-tax place). Where the tax discount in the destination is less than 5 pp, there appears to be no relationship with the income of the people moving there. Counter-intuitively, and counter to the implications of figures 1 & 2, counties with higher realized taxes on high-income households (similar to NYC) attracted migrants with higher average incomes. This is explained by the allure of places like San Francisco outweighing the dreaded California tax code.
 
-Something to notice about figure 3 is that every bin has a very high average income. Peering into the data some more, there are indeed some grotesquely rich people, featuring 166 households who filed their taxes in Manhattan in 2012 and in Albany county in 2013 who had an **average** income of ... **$3,800,000**
+Something to notice about figure 3 is that every bin has a very high average income. Peering into the data some more, there are indeed some grotesquely rich people, featuring 166 households who filed their taxes in Manhattan in 2012 and in Albany county in 2013 who had an average income of $3,800,000.
 
 From 2020 to 2021, there were 2500 households with an average income of \$1.2M moving from Manhattan to Miami-Dade County. Not even the Central Limit Theorem can hide the unbelievable right tail of the American income distribution.
 
 
-# A DD with New York State
+# Regression Analysis
 
+We now turn to the difference-in-differences analysis for each policy in turn.
 
-In 2021, New York State raised its top marginal income tax rate from **6.85% to 9.85%** on income exceeding \$1 million. Our strategy capitalizes on the fact that some destination counties outside New York were already attracting rich New York migrants before the shock, while others were not. If the 2021 tax increase caused a behavioral response among high earners, the counties that were drawing wealthier New Yorkers in the pre-shock period should see a larger increase in inflows after the rate rose. If these counties also especially attracted the ultra-high-income households, these migrants' average incomes should increase too.
+## New York 2021 Tax Hike
 
-The figure below plots the **proportional change** in migration flow (average of 2021-2022 moves vs. the 2019 pre-shock baseline) against the **log per-capita AGI** of people who moved from each NY county to each destination in the pre-shock year. A positive slope would support the hypothesis that high-income New Yorkers were pushed out at an increased rate after the tax increase.
+In 2021, New York State raised its top marginal income tax rate from 6.85% to 9.85% on income exceeding \$1 million. Our strategy capitalizes on the fact that some destination counties outside New York were already attracting rich New York migrants before the shock, while others were not. If the 2021 tax increase caused a behavioral response among high earners, the counties that were drawing wealthier New Yorkers in the pre-shock period should see a larger increase in inflows after the rate rose. If these counties also especially attracted the ultra-high-income households, these migrants' average incomes should increase too.
+
+The figure below plots the proportional change in migration flow (average of 2021-2022 moves vs. the 2019 pre-shock baseline) against the log per-capita AGI of people who moved from each NY county to each destination in the pre-shock year. A positive slope would support the hypothesis that high-income New Yorkers were pushed out at an increased rate after the tax increase.
 
 > **Note on year labels:** Each `year` value in the data is the *starting* year of the IRS migration file, so `year == 2019` captures people who physically moved between filing their 2019 taxes and 2020 taxes, `year == 2020` captures moves between 2020 taxes and 2021 taxes (the immediate shock year), and `year == 2021` captures moves during 2022. The pre-shock baseline uses `year == 2019` (moves in 2020); the post-shock period averages `year %in% c(2020, 2021)` (moves in 2021 and 2022).
 
-Figure 4.
-```{r}
+```{r fig-ny-semicausal, out.width='90%', fig.cap="New York tax shock: change in out-migration by destination's previous migrants' income."}
 knitr::include_graphics(here::here("Output/Visualizations/Change_in_flow_after_NY_tax_hike_vs_pre-tax-hike_migrant_mean_agi.pdf"))
 ```
 
-Figure 4 reports a binscatter plot of the percent increase in the number of households moving to each destination (vertical value) relative to the logarithm of the per-capita AGI of migrants to the same destination during 2020 (who left NY in 2019). The slope trends downward, but is very noisy for per-capita AGI less than $116k (horizontal value = 4.75). Then the binscatter jumps down to the level indicating no relationship between pre-2020 migrant average income and a change in migration after the NY state tax increase.
+The binscatter suggests little positive relationship between pre-shock migrant income and the subsequent increase in out-migration from New York. If anything, the slope trends downward and becomes quite noisy for lower-income destinations, which does not support a clean story in which the tax increase disproportionately pushed out the highest-income movers.
 
+The map below shows the *geographic* version of the same question: which parts of the country absorbed New York migrants, and how did that pattern shift in the year taxes went up?
 
-# Geographic Patterns: The NY 2021 Tax Shock on a Map
-
-Figure 4 shows the *aggregate* relationship between NY out-migration and destination wealth. The maps below show the *geographic* version of the same question: which parts of the country absorbed New York migrants, and how did that pattern shift in the year taxes went up?
-
-## Where Did NY Migrants Go? (Before vs. After 2021)
-
-Figure 5.
-```{r, out.width='90%'}
+```{r fig-ny-map, out.width='90%', fig.cap="Geographic redistribution of New York out-migration before vs. after the 2021 tax increase."}
 knitr::include_graphics(here::here('Output/Visualizations/NY_Emigration_Change_at_Tax_Policy-Map.pdf'))
 ```
 
-The map complements the binscatter results. Blue counties absorbed more New York migrants after the 2021 rate increase; red counties absorbed fewer. The gains are concentrated in Florida (particularly Miami-Dade and Palm Beach counties), parts of the Carolina and Texas metros, and a handful of coastal destinations. Most of the country shows little change (white), meaning the shock did not produce a broad nationwide redistribution of New York migrants. The pattern is geographically clustered rather than uniformly driven by low taxes, pointing toward amenity sorting as a competing explanation alongside tax avoidance.
+The map complements the binscatter results. Blue counties absorbed more New York migrants after the 2021 rate increase; red counties absorbed fewer. The gains are concentrated in Florida (particularly Miami-Dade and Palm Beach counties), parts of the Carolina and Texas metros, and a handful of coastal destinations. Most of the country shows little change, meaning the shock did not produce a broad nationwide redistribution of New York migrants. The pattern is geographically clustered rather than uniformly driven by low taxes, pointing toward amenity sorting as a competing explanation alongside tax avoidance.
 
 > **Note:** An animated version of this map showing Manhattan out-migration year-by-year from 2011–2021 is available in `Updated Working Files/Analysis/Map Visualization.R`. Run that script to produce `manhattan_exodus_animated.gif`. The animation makes the 2021 shift visually apparent against the prior trend.
 
-# Regression Analysis
+> **Disclaimer:** The policy change happened at the same time as the pandemic. It is impossible to distinguish between the effect of the tax change and the effect of the pandemic in New York City, so any causal interpretation of the New York estimates is seriously confounded.
 
-As mentioned above, New York State increase its top marginal income tax rate in 2021 from 6.85% to 9.85% for households with incomes exceeding \$1 million. To establish the type of analysis we intend to conduct, we estimate the following equation:
+To estimate how the tax change affected out-migration from New York in the full county-pair panel, we begin with the following equation:
 
 $$log(n) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$$
 
 where n is the number of tax returns moving from one county to another, $Treat_c$ is an indicator for if the county in year 1 was in New York, and $Post_t$ is an indicator for if the year of the observation was 2020 or 2021 (to capture people who moved anticipating the increase in taxes as well as people responding to the increase by leaving the following year). We also estimate the income composition model, where the only difference is that number of returns has been replaced by mean AGI of those tax returns:
 
 $$log(\frac{AGI}{n}) = \alpha + \beta_1(Treat_c) + \beta_2(Post_t) + \beta_3(Treat * Post)_{c,t} + \epsilon_{c,t}$$
+
+For all income specifications and income-trend plots, we drop county-pair observations with non-positive migrant per-capita AGI before taking logs. These are rare rows where the IRS migration file reports zero or negative aggregate AGI, and leaving them in would create artificial $-\infty$ values and misleading dips in the plotted averages.
+
 Table 1
 ```{r ny-coef-table}
 knitr::kable(
@@ -184,38 +183,37 @@ knitr::kable(
 
 There was a 23.7% increase in migration among counties outside of New York from the 2011-2020 average to the 2020-2022 average. The increase between the two periods for people leaving New York was 6.8 pp greater than the national average. As suggested by figure 1, the New York State tax increase did increase the number of New Yorkers fleeing the state.
 
-The average income of people moving out of New York State during 2011-2022 was 19% higher than the people leaving anywhere else. There was a 26% increase in mean AGI of people leaving a county outside of NY from the 2011-2020 average to the 2020-2022 average. From the coefficient estimate of the interaction term, the increase in mean AGI of people leaving NY from the 2011-2020 average to the 2020-2022 average was 7% greater than the mean AGI of people leaving anywhere else. This corroborates the estimates in the first estimating equation, namely that the deep-pocketed New Yorkers **were encouraged to flee the tax hike.**
+Among observations with positive migrant per-capita AGI, the average income of people moving out of New York State during 2011-2022 was 19% higher than the people leaving anywhere else. There was a 26% increase in mean AGI of people leaving a county outside of NY from the 2011-2020 average to the 2020-2022 average. From the coefficient estimate of the interaction term, the increase in mean AGI of people leaving NY from the 2011-2020 average to the 2020-2022 average was 7% greater than the mean AGI of people leaving anywhere else. This is consistent with higher-income New Yorkers leaving at a faster rate after the tax hike, though the pandemic makes a clean causal interpretation difficult.
 
 The figures below show mean log migration volume and mean log per-capita AGI over time for New York counties (treated) versus all other origin counties (control). The dashed line marks the start of the post period.
 
-Figure 6.
-```{r, out.width='90%'}
+> **Note:** The sharp level jump between calendar 2013 and 2014 in the volume trends is best understood as a reporting break in the IRS county-to-county migration files, not as a sudden nationwide surge in out-migration. The plot compares the IRS `2012-2013` file to the `2013-2014` file, and the IRS's `2013-2014 Migration Data Users Guide` states that the county-file disclosure threshold was raised from 10 returns to 20 returns, with additional county-level suppression. In our cleaned data, nearly 47% of county-pair observations in calendar 2012-2013 had only 10-19 returns, while those small flows are almost entirely absent from calendar 2014 onward. Mechanically removing many small flows raises the average of $\log(n)$, so the post-2013 level shift should not be interpreted as an economic break in migration behavior.
+
+```{r fig-ny-did-volume, out.width='90%', fig.cap="Mean log out-migration volume over time for New York counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NY_DiD_volume_trends.pdf"))
 ```
 
 The volume trends plot shows that New York out-migration moved broadly with the control group pre-tax increase, but rose sharply after it came into effect. This is consistent with the positive treatment by post coefficient.
 
-Figure 7.
-```{r, out.width='90%'}
+> **Note:** A small number of county-pair observations in the IRS migration files report zero or negative total AGI even when the number of returns is positive. Because the income trends and income regressions use $\log(AGI / n)$, keeping those rows would mechanically create artificial $-\infty$ values and misleading dips in the plotted averages. We therefore drop observations with non-positive migrant per-capita AGI before taking logs in the income specifications only. This is appropriate here because the goal of these plots is to compare the intensive-margin income composition of observed migration flows, not to treat zero or negative reported AGI as economically meaningful average migrant income.
+
+```{r fig-ny-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for New York counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NY_DiD_income_trends.pdf"))
 ```
 
-The income trends plot shows that New York out-migration have higher average per-capita AGI that migrants from other states throughout the period. Post 2021, this gap appears to widen. 
+The income trends plot shows that New York out-migrants had higher average per-capita AGI than migrants from other states throughout the period. Post 2021, the New York-control gap still appears to widen somewhat, which is consistent with the positive interaction coefficient in table 1.
 
-## Disclaimer!!!
+\clearpage
 
-The policy change happened at the same time as a pandemic. It is impossible to distinguish between the effect of the tax change and the effect of the pandemic in NYC. This seriously confounds our analysis.
+## New Jersey 2018 Tax Hike
 
-# New Jersey 2018 Tax Hike
+New Jersey raised its top marginal income tax rate in 2018, increasing the top rate from 8.97% to 10.75% for the highest income households. Because this policy change occurred well before the pandemic and leaves us with more post-event data, it provides a useful comparison case for the New York analysis. For this regression, the treatment is county-pair observations where the county of origin is in New Jersey.
 
-New Jersey raised its top marginal income tax rate in 2018, increasing the top rate from 8.97% to 10.75% for the highest income households. This policy change provides a useful comparison to the New York tax shock as there is more post-event data (and well before the pandemic), allowing us to look at longer-run migration patterns. For this regression, the treatment is county pair observations where the county of origin is New Jersey.
-
-Figure 8.
-```{r, out.width='90%'}
+```{r fig-nj-semicausal, out.width='90%', fig.cap="New Jersey tax shock: change in out-migration by destination's previous migrants' income."}
 knitr::include_graphics(here::here("Output/Visualizations/NJ_semicausal_binscatter.pdf"))
 ```
 
-In figure 8, there seems to be little relationship between pre-policy change migrant incomes and the subsequent change in the number of households leaving NJ.
+The binscatter below suggests little relationship between pre-policy-change migrant incomes and the subsequent change in the number of households leaving New Jersey.
 
 We estimate the effect on out-migration volume:
 
@@ -245,32 +243,30 @@ knitr::kable(
 )
 ```
 
-The New Jersey estimates do not show strong evidence of a large response to the 2018 tax increase. The volume model shows that tax filer flows that originated in New Jersey were lower than flows from other points of origin on average, and the post-period coefficient indicates that migration volume increased in general after 2017 among the control group. However, the interaction coefficient is negative and only slightly significant, which suggests the New Jersey out-migration was slightly less than other states after the tax hike. The income model shows that migrants leaving New Jersey had substantially higher mean AGI than migrants leaving other states (40% higher), but the treatment by post coefficient is very small and statistically insignificant. Altogether, this means that the tax increase did not clearly changes the income positions of people leaving New Jersey.
+The New Jersey estimates do not show strong evidence of a large response to the 2018 tax increase. The volume model shows that tax filer flows that originated in New Jersey were lower than flows from other points of origin on average, and the post-period coefficient indicates that migration volume increased in general after 2017 among the control group. However, the interaction coefficient is negative and only slightly significant, which suggests New Jersey out-migration was slightly lower than other states after the tax hike. In the income model, which again excludes non-positive migrant per-capita AGI before logging, migrants leaving New Jersey had substantially higher mean AGI than migrants leaving other states (40% higher), but the treatment by post coefficient is very small and statistically insignificant. Altogether, this means that the tax increase did not clearly change the income composition of people leaving New Jersey.
 
 The figures below show mean log migration volume and mean log per-capita AGI over time for New Jersey counties (treated) versus all other origin counties (control). The dashed line marks the start of the post period.
 
-
-Figure 9.
-```{r, out.width='90%'}
+```{r fig-nj-did-volume, out.width='90%', fig.cap="Mean log out-migration volume over time for New Jersey counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NJ_DiD_volume_trends.pdf"))
 ```
 
 The volume trends plot shows that New Jersey out-migration moves broadly with the control group, and no clear post 2017 surge that would indicate that the change in tax policy resulted in a state-wide exodus.
 
 
-Figure 10.
-```{r, out.width='90%'}
+```{r fig-nj-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for New Jersey counties vs. other origin states."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/NJ_DiD_income_trends.pdf"))
 ```
 
-The income trends plot shows that New Jersey out-migrants had higher average per-capita AGI than migrants from other states. However, again there is not a clear break after the 2017 tax policy change that would suggest a change in income composition of movers.
+The income trends plot shows that New Jersey out-migrants had higher average per-capita AGI than migrants from other states. However, there is not a clear break after the 2017 tax policy change that would suggest a change in the income composition of movers.
 
-# Delaware 2018 Estate Tax Repeal
+\clearpage
+
+## Delaware 2018 Estate Tax Repeal
 
 Delaware repealed its estate tax in 2018, which was previously only pertinent to very large estates. Compared to the previous analyses, this policy is a tax cut rather than an increase, so the expected behavior would be in the opposite direction. Instead of looking at whether individuals are leaving a high tax state, were looking at whether the repeal made Delaware more attractive (on top of other effects). Because of this, we decided to put the treatment on the destinations side rather than origin.
 
-Figure 11.
-```{r, out.width='90%'}
+```{r fig-de-semicausal, out.width='90%', fig.cap="Delaware estate tax repeal: change in in-migration by origins' previous migrants' income."}
 knitr::include_graphics(here::here("Output/Visualizations/DE_semicausal_binscatter.pdf"))
 ```
 
@@ -303,19 +299,17 @@ knitr::kable(
 )
 ```
 
-Again, the Delaware regression results provide evidence against the notion that the estate tax repeal would produce a large increase in migration into Delaware. The volume model shows that Delaware destination flows were lower than other flows on average, while the post-period coefficient shows that migration volume rose across the board after 2017 in the control group. The interaction coefficient is negative but not statistically significant, meaning that we cannot conclude that Delaware received either more or fewer migrants compared to other destinations post-repeal. The income model shows that migrants moving to Delaware had higher average AGI than migrants moving to other destinations, however, the interaction term is small, positive, and statistically insignificant. Overall, the repeal does not appear to have produced a clear increase in either the number or average income of migrants moving to Deleware.
+Again, the Delaware regression results provide evidence against the notion that the estate tax repeal would produce a large increase in migration into Delaware. The volume model shows that Delaware destination flows were lower than other flows on average, while the post-period coefficient shows that migration volume rose across the board after 2017 in the control group. The interaction coefficient is negative but not statistically significant, meaning that we cannot conclude that Delaware received either more or fewer migrants compared to other destinations post-repeal. The income model, which excludes non-positive migrant per-capita AGI before logging, shows that migrants moving to Delaware had higher average AGI than migrants moving to other destinations; however, the interaction term is small, positive, and statistically insignificant. Overall, the repeal does not appear to have produced a clear increase in either the number or average income of migrants moving to Delaware.
 
 The figures below show mean log in-migration volume and mean log per-capita AGI over time for flows into Delaware counties (treated) versus flows into all other destinations (control). The dashed line marks the start of the post period.
 
-Figure 12.
-```{r, out.width='90%'}
+```{r fig-de-did-volume, out.width='90%', fig.cap="Mean log in-migration volume over time for Delaware destinations vs. other destinations."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/DE_DiD_volume_trends.pdf"))
 ```
 
-The volume trends plot shows no clear post 2017 increase in Delaware in-migration relative to other destinations, suggesting that the tax repeal did not visibly change Delawares migration volume trend.
+The volume trends plot shows no clear post 2017 increase in Delaware in-migration relative to other destinations, suggesting that the tax repeal did not visibly change Delaware's migration volume trend.
 
-Figure 13.
-```{r, out.width='90%'}
+```{r fig-de-did-income, out.width='90%', fig.cap="Mean log migrant per-capita AGI over time for Delaware destinations vs. other destinations."}
 knitr::include_graphics(here::here("Output/Visualizations/Stage 3/DE_DiD_income_trends.pdf"))
 ```
 
